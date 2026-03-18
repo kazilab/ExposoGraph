@@ -8,7 +8,7 @@ From PyPI (once published):
 
 .. code-block:: bash
 
-   pip install kg-builder
+   pip install ExposoGraph
 
 From source (development):
 
@@ -31,9 +31,14 @@ Streamlit App
 
 .. code-block:: bash
 
-   export ExposoGraph_MODE=stateless
    pip install -e ".[streamlit]"
    streamlit run ExposoGraph/app.py
+
+App mode defaults to ``stateless``. To set it explicitly:
+
+.. code-block:: bash
+
+   export ExposoGraph_MODE=stateless
 
 Set your OpenAI API key in the sidebar, or via environment variable:
 
@@ -102,7 +107,10 @@ Exporting
 
 .. code-block:: python
 
-   from ExposoGraph import to_graph_data_js, to_json, to_gexf
+   from ExposoGraph import to_graph_data_js, to_interactive_html, to_json, to_gexf
+
+   # Standalone interactive HTML
+   to_interactive_html(engine, "knowledge-graph/index.html")
 
    # D3.js viewer format
    to_graph_data_js(engine, "knowledge-graph/graph-data.js")
