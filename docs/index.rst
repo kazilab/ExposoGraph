@@ -17,6 +17,11 @@ Copyright: **KaziLab**
 
    This project is under active development.
 
+.. note::
+
+   Parts of this documentation and code were created with assistance from
+   ChatGPT Codex and Claude Code.
+
 .. toctree::
    :maxdepth: 2
    :caption: Getting Started
