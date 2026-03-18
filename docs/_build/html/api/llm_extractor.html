@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>ExposoGraph.llm_extractor &#8212; ExposoGraph</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=5ecbeea2" />
+    <link rel="stylesheet" type="text/css" href="../_static/alabaster.css?v=12dfc556" />
+    <script src="../_static/documentation_options.js?v=d45e8c67"></script>
+    <script src="../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="ExposoGraph.reference_data" href="reference_data.html" />
+    <link rel="prev" title="ExposoGraph.exporter" href="exporter.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="exposograph-llm-extractor">
+<h1><code class="docutils literal notranslate"><span class="pre">ExposoGraph.llm_extractor</span></code><a class="headerlink" href="#exposograph-llm-extractor" title="Link to this heading">¶</a></h1>
+<p>LLM-powered entity and relation extraction using OpenAI structured outputs.</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="ExposoGraph.llm_extractor.extract_graph">
+<span class="sig-prename descclassname"><span class="pre">ExposoGraph.llm_extractor.</span></span><span class="sig-name descname"><span class="pre">extract_graph</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">text</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">model</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'gpt-4o'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">api_key</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">base_url</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ExposoGraph/llm_extractor.html#extract_graph"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ExposoGraph.llm_extractor.extract_graph" title="Link to this definition">¶</a></dt>
+<dd><p>Send <em>text</em> to the LLM and return a validated KnowledgeGraph.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>text</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>)</p></li>
+<li><p><strong>model</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>)</p></li>
+<li><p><strong>api_key</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em> | </em><em>None</em>)</p></li>
+<li><p><strong>base_url</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em> | </em><em>None</em>)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="models.html#ExposoGraph.models.KnowledgeGraph" title="ExposoGraph.models.KnowledgeGraph"><em>KnowledgeGraph</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="ExposoGraph.llm_extractor.SYSTEM_PROMPT">
+<span class="sig-prename descclassname"><span class="pre">ExposoGraph.llm_extractor.</span></span><span class="sig-name descname"><span class="pre">SYSTEM_PROMPT</span></span><a class="headerlink" href="#ExposoGraph.llm_extractor.SYSTEM_PROMPT" title="Link to this definition">¶</a></dt>
+<dd><p>The system prompt sent to the LLM, containing the full schema specification
+and extraction guidelines.</p>
+</dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="ExposoGraph.llm_extractor.EXAMPLE_INPUT">
+<span class="sig-prename descclassname"><span class="pre">ExposoGraph.llm_extractor.</span></span><span class="sig-name descname"><span class="pre">EXAMPLE_INPUT</span></span><a class="headerlink" href="#ExposoGraph.llm_extractor.EXAMPLE_INPUT" title="Link to this definition">¶</a></dt>
+<dd><p>Example input text describing the Benzo[a]pyrene metabolism pathway,
+useful for testing and demonstration.</p>
+</dd></dl>
+
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">ExposoGraph</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../quickstart.html">Quick Start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../deployment.html">Deployment</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../schema.html">Schema Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../gene-panels.html">Gene Panels &amp; Activity Scores</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="config.html"><code class="docutils literal notranslate"><span class="pre">ExposoGraph.config</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="models.html"><code class="docutils literal notranslate"><span class="pre">ExposoGraph.models</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="engine.html"><code class="docutils literal notranslate"><span class="pre">ExposoGraph.engine</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="exporter.html"><code class="docutils literal notranslate"><span class="pre">ExposoGraph.exporter</span></code></a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#"><code class="docutils literal notranslate"><span class="pre">ExposoGraph.llm_extractor</span></code></a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#ExposoGraph.llm_extractor.extract_graph"><code class="docutils literal notranslate"><span class="pre">extract_graph()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ExposoGraph.llm_extractor.SYSTEM_PROMPT"><code class="docutils literal notranslate"><span class="pre">ExposoGraph.llm_extractor.SYSTEM_PROMPT</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ExposoGraph.llm_extractor.EXAMPLE_INPUT"><code class="docutils literal notranslate"><span class="pre">ExposoGraph.llm_extractor.EXAMPLE_INPUT</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="reference_data.html"><code class="docutils literal notranslate"><span class="pre">ExposoGraph.reference_data</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="storage.html"><code class="docutils literal notranslate"><span class="pre">ExposoGraph.storage</span></code></a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Project</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../changelog.html">Changelog</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="exporter.html" title="previous chapter"><code class="docutils literal notranslate"><span class="pre">ExposoGraph.exporter</span></code></a></li>
+      <li>Next: <a href="reference_data.html" title="next chapter"><code class="docutils literal notranslate"><span class="pre">ExposoGraph.reference_data</span></code></a></li>
+  </ul></li>
+</ul>
+</div>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;2026, KaziLab.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 8.2.3</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 0.7.16</a>
+      
+      |
+      <a href="../_sources/api/llm_extractor.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

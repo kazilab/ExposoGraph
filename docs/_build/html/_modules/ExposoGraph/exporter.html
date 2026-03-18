@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ExposoGraph.exporter &#8212; ExposoGraph</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=5ecbeea2" />
+    <link rel="stylesheet" type="text/css" href="../../_static/alabaster.css?v=12dfc556" />
+    <script src="../../_static/documentation_options.js?v=d45e8c67"></script>
+    <script src="../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for ExposoGraph.exporter</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Export the knowledge graph to various formats.</span>
+
+<span class="sd">Primary target: the D3.js viewer at knowledge-graph/index.html, which reads</span>
+<span class="sd">a GRAPH_DATA constant from graph-data.js.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">shutil</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">.branding</span><span class="w"> </span><span class="kn">import</span> <span class="n">APP_NAME</span><span class="p">,</span> <span class="n">APP_VERSION</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.engine</span><span class="w"> </span><span class="kn">import</span> <span class="n">GraphEngine</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">KnowledgeGraph</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_extract_graph_data_object</span><span class="p">(</span><span class="n">raw</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Extract the object assigned to ``GRAPH_DATA`` from JS or HTML text.&quot;&quot;&quot;</span>
+    <span class="n">marker</span> <span class="o">=</span> <span class="s2">&quot;GRAPH_DATA&quot;</span>
+    <span class="n">marker_pos</span> <span class="o">=</span> <span class="n">raw</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="n">marker</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">marker_pos</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+        <span class="n">start</span> <span class="o">=</span> <span class="n">raw</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;{&quot;</span><span class="p">)</span>
+        <span class="n">end</span> <span class="o">=</span> <span class="n">raw</span><span class="o">.</span><span class="n">rfind</span><span class="p">(</span><span class="s2">&quot;}&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">start</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span> <span class="ow">or</span> <span class="n">end</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span> <span class="ow">or</span> <span class="n">start</span> <span class="o">&gt;=</span> <span class="n">end</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Could not locate graph data object&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">raw</span><span class="p">[</span><span class="n">start</span><span class="p">:</span><span class="n">end</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span>
+
+    <span class="n">start</span> <span class="o">=</span> <span class="n">raw</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;{&quot;</span><span class="p">,</span> <span class="n">marker_pos</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">start</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Could not locate start of GRAPH_DATA object&quot;</span><span class="p">)</span>
+
+    <span class="n">depth</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">in_string</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">string_char</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+    <span class="n">escape</span> <span class="o">=</span> <span class="kc">False</span>
+
+    <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">start</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">raw</span><span class="p">)):</span>
+        <span class="n">ch</span> <span class="o">=</span> <span class="n">raw</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">in_string</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">escape</span><span class="p">:</span>
+                <span class="n">escape</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="k">elif</span> <span class="n">ch</span> <span class="o">==</span> <span class="s2">&quot;</span><span class="se">\\</span><span class="s2">&quot;</span><span class="p">:</span>
+                <span class="n">escape</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="k">elif</span> <span class="n">ch</span> <span class="o">==</span> <span class="n">string_char</span><span class="p">:</span>
+                <span class="n">in_string</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">ch</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">&#39;&quot;&#39;</span><span class="p">,</span> <span class="s2">&quot;&#39;&quot;</span><span class="p">,</span> <span class="s2">&quot;`&quot;</span><span class="p">):</span>
+                <span class="n">in_string</span> <span class="o">=</span> <span class="kc">True</span>
+                <span class="n">string_char</span> <span class="o">=</span> <span class="n">ch</span>
+            <span class="k">elif</span> <span class="n">ch</span> <span class="o">==</span> <span class="s2">&quot;{&quot;</span><span class="p">:</span>
+                <span class="n">depth</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="k">elif</span> <span class="n">ch</span> <span class="o">==</span> <span class="s2">&quot;}&quot;</span><span class="p">:</span>
+                <span class="n">depth</span> <span class="o">-=</span> <span class="mi">1</span>
+                <span class="k">if</span> <span class="n">depth</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="n">raw</span><span class="p">[</span><span class="n">start</span><span class="p">:</span><span class="n">idx</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span>
+
+    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Could not find the end of the GRAPH_DATA object&quot;</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_strip_js_comments</span><span class="p">(</span><span class="n">raw</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Remove JS comments without damaging quoted strings.&quot;&quot;&quot;</span>
+    <span class="n">result</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">in_string</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">string_char</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+    <span class="n">escape</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">in_line_comment</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">in_block_comment</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">idx</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="k">while</span> <span class="n">idx</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">raw</span><span class="p">):</span>
+        <span class="n">ch</span> <span class="o">=</span> <span class="n">raw</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
+        <span class="n">nxt</span> <span class="o">=</span> <span class="n">raw</span><span class="p">[</span><span class="n">idx</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span> <span class="k">if</span> <span class="n">idx</span> <span class="o">+</span> <span class="mi">1</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">raw</span><span class="p">)</span> <span class="k">else</span> <span class="s2">&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="n">in_line_comment</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">ch</span> <span class="o">==</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">:</span>
+                <span class="n">in_line_comment</span> <span class="o">=</span> <span class="kc">False</span>
+                <span class="n">result</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ch</span><span class="p">)</span>
+            <span class="n">idx</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="k">continue</span>
+
+        <span class="k">if</span> <span class="n">in_block_comment</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">ch</span> <span class="o">==</span> <span class="s2">&quot;*&quot;</span> <span class="ow">and</span> <span class="n">nxt</span> <span class="o">==</span> <span class="s2">&quot;/&quot;</span><span class="p">:</span>
+                <span class="n">in_block_comment</span> <span class="o">=</span> <span class="kc">False</span>
+                <span class="n">idx</span> <span class="o">+=</span> <span class="mi">2</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">idx</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="k">continue</span>
+
+        <span class="k">if</span> <span class="n">in_string</span><span class="p">:</span>
+            <span class="n">result</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ch</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">escape</span><span class="p">:</span>
+                <span class="n">escape</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="k">elif</span> <span class="n">ch</span> <span class="o">==</span> <span class="s2">&quot;</span><span class="se">\\</span><span class="s2">&quot;</span><span class="p">:</span>
+                <span class="n">escape</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="k">elif</span> <span class="n">ch</span> <span class="o">==</span> <span class="n">string_char</span><span class="p">:</span>
+                <span class="n">in_string</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="n">idx</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="k">continue</span>
+
+        <span class="k">if</span> <span class="n">ch</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">&#39;&quot;&#39;</span><span class="p">,</span> <span class="s2">&quot;&#39;&quot;</span><span class="p">,</span> <span class="s2">&quot;`&quot;</span><span class="p">):</span>
+            <span class="n">in_string</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="n">string_char</span> <span class="o">=</span> <span class="n">ch</span>
+            <span class="n">result</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ch</span><span class="p">)</span>
+            <span class="n">idx</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="k">continue</span>
+
+        <span class="k">if</span> <span class="n">ch</span> <span class="o">==</span> <span class="s2">&quot;/&quot;</span> <span class="ow">and</span> <span class="n">nxt</span> <span class="o">==</span> <span class="s2">&quot;/&quot;</span><span class="p">:</span>
+            <span class="n">in_line_comment</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="n">idx</span> <span class="o">+=</span> <span class="mi">2</span>
+            <span class="k">continue</span>
+
+        <span class="k">if</span> <span class="n">ch</span> <span class="o">==</span> <span class="s2">&quot;/&quot;</span> <span class="ow">and</span> <span class="n">nxt</span> <span class="o">==</span> <span class="s2">&quot;*&quot;</span><span class="p">:</span>
+            <span class="n">in_block_comment</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="n">idx</span> <span class="o">+=</span> <span class="mi">2</span>
+            <span class="k">continue</span>
+
+        <span class="n">result</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ch</span><span class="p">)</span>
+        <span class="n">idx</span> <span class="o">+=</span> <span class="mi">1</span>
+
+    <span class="k">return</span> <span class="s2">&quot;&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="parse_graph_data_text">
+<a class="viewcode-back" href="../../api/exporter.html#ExposoGraph.exporter.parse_graph_data_text">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">parse_graph_data_text</span><span class="p">(</span><span class="n">raw</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">KnowledgeGraph</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Parse JS/HTML text that contains a ``GRAPH_DATA`` object assignment.</span>
+
+<span class="sd">    Handles unquoted keys, single-line comments, and trailing commas</span>
+<span class="sd">    that are valid in JavaScript but not in JSON.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">js_obj</span> <span class="o">=</span> <span class="n">_extract_graph_data_object</span><span class="p">(</span><span class="n">raw</span><span class="p">)</span>
+
+    <span class="c1"># Strip JS comments</span>
+    <span class="n">js_obj</span> <span class="o">=</span> <span class="n">_strip_js_comments</span><span class="p">(</span><span class="n">js_obj</span><span class="p">)</span>
+
+    <span class="c1"># Quote unquoted object keys:  key: → &quot;key&quot;:</span>
+    <span class="n">js_obj</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;(?&lt;=[{,\n])\s*(\w+)\s*:&quot;</span><span class="p">,</span> <span class="sa">r</span><span class="s1">&#39; &quot;\1&quot;:&#39;</span><span class="p">,</span> <span class="n">js_obj</span><span class="p">)</span>
+
+    <span class="c1"># Remove trailing commas before } or ]</span>
+    <span class="n">js_obj</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;,\s*([}\]])&quot;</span><span class="p">,</span> <span class="sa">r</span><span class="s2">&quot;\1&quot;</span><span class="p">,</span> <span class="n">js_obj</span><span class="p">)</span>
+
+    <span class="n">data</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">js_obj</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">KnowledgeGraph</span><span class="p">(</span><span class="o">**</span><span class="n">data</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="parse_graph_data_js">
+<a class="viewcode-back" href="../../api/exporter.html#ExposoGraph.exporter.parse_graph_data_js">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">parse_graph_data_js</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">KnowledgeGraph</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Parse a ``graph-data.js`` file.&quot;&quot;&quot;</span>
+    <span class="n">raw</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">path</span><span class="p">)</span><span class="o">.</span><span class="n">read_text</span><span class="p">(</span><span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">parse_graph_data_text</span><span class="p">(</span><span class="n">raw</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="parse_graph_html">
+<a class="viewcode-back" href="../../api/exporter.html#ExposoGraph.exporter.parse_graph_html">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">parse_graph_html</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">KnowledgeGraph</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Parse a standalone HTML graph export with embedded ``GRAPH_DATA``.&quot;&quot;&quot;</span>
+    <span class="n">raw</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">path</span><span class="p">)</span><span class="o">.</span><span class="n">read_text</span><span class="p">(</span><span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">parse_graph_data_text</span><span class="p">(</span><span class="n">raw</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="parse_graph_artifact">
+<a class="viewcode-back" href="../../api/exporter.html#ExposoGraph.exporter.parse_graph_artifact">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">parse_graph_artifact</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">KnowledgeGraph</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Parse JSON, JS, or HTML graph artifacts.&quot;&quot;&quot;</span>
+    <span class="n">path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+    <span class="n">raw</span> <span class="o">=</span> <span class="n">path</span><span class="o">.</span><span class="n">read_text</span><span class="p">(</span><span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">path</span><span class="o">.</span><span class="n">suffix</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s2">&quot;.json&quot;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">KnowledgeGraph</span><span class="p">(</span><span class="o">**</span><span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">raw</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">parse_graph_data_text</span><span class="p">(</span><span class="n">raw</span><span class="p">)</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_clean_for_js</span><span class="p">(</span><span class="n">obj</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Strip None values so the JS side sees clean objects.&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">_clean_for_js</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">obj</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">v</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">}</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">_clean_for_js</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">obj</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">obj</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_graph_data_script</span><span class="p">(</span><span class="n">engine</span><span class="p">:</span> <span class="n">GraphEngine</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="n">_clean_for_js</span><span class="p">(</span><span class="n">engine</span><span class="o">.</span><span class="n">to_dict</span><span class="p">())</span>
+    <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;const GRAPH_DATA = </span><span class="si">{</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">data</span><span class="p">,</span><span class="w"> </span><span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span><span class="si">}</span><span class="s2">;&quot;</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_default_template_candidates</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Path</span><span class="p">]:</span>
+    <span class="n">repo_root</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="vm">__file__</span><span class="p">)</span><span class="o">.</span><span class="n">resolve</span><span class="p">()</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">parent</span>
+    <span class="k">return</span> <span class="p">[</span>
+        <span class="n">repo_root</span> <span class="o">/</span> <span class="s2">&quot;references&quot;</span> <span class="o">/</span> <span class="s2">&quot;knowledge-graph&quot;</span> <span class="o">/</span> <span class="s2">&quot;index.html&quot;</span><span class="p">,</span>
+        <span class="n">repo_root</span> <span class="o">/</span> <span class="s2">&quot;knowledge-graph&quot;</span> <span class="o">/</span> <span class="s2">&quot;index.html&quot;</span><span class="p">,</span>
+    <span class="p">]</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_load_viewer_template</span><span class="p">(</span><span class="n">template_path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Path</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="n">candidates</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Path</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">if</span> <span class="n">template_path</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">template_path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">template_path</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">template_path</span><span class="o">.</span><span class="n">is_dir</span><span class="p">():</span>
+            <span class="n">candidates</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">template_path</span> <span class="o">/</span> <span class="s2">&quot;index.html&quot;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">candidates</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">template_path</span><span class="p">)</span>
+    <span class="n">candidates</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">_default_template_candidates</span><span class="p">())</span>
+
+    <span class="k">for</span> <span class="n">candidate</span> <span class="ow">in</span> <span class="n">candidates</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">candidate</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+            <span class="k">return</span> <span class="n">candidate</span><span class="o">.</span><span class="n">read_text</span><span class="p">(</span><span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span>
+
+    <span class="k">raise</span> <span class="ne">FileNotFoundError</span><span class="p">(</span><span class="s2">&quot;No viewer HTML template was found&quot;</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="to_graph_data_js">
+<a class="viewcode-back" href="../../api/exporter.html#ExposoGraph.exporter.to_graph_data_js">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">to_graph_data_js</span><span class="p">(</span><span class="n">engine</span><span class="p">:</span> <span class="n">GraphEngine</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Path</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Write a ``graph-data.js`` file consumable by the D3 viewer.&quot;&quot;&quot;</span>
+    <span class="n">path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+    <span class="n">header</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="s2">&quot;// ═══════════════════════════════════════════════════════════════</span><span class="se">\n</span><span class="s2">&quot;</span>
+        <span class="sa">f</span><span class="s2">&quot;// Auto-generated by </span><span class="si">{</span><span class="n">APP_NAME</span><span class="si">}</span><span class="s2"> v</span><span class="si">{</span><span class="n">APP_VERSION</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span>
+        <span class="s2">&quot;// ═══════════════════════════════════════════════════════════════</span><span class="se">\n\n</span><span class="s2">&quot;</span>
+    <span class="p">)</span>
+
+    <span class="n">js</span> <span class="o">=</span> <span class="n">header</span> <span class="o">+</span> <span class="n">_graph_data_script</span><span class="p">(</span><span class="n">engine</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span>
+    <span class="n">path</span><span class="o">.</span><span class="n">write_text</span><span class="p">(</span><span class="n">js</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">path</span></div>
+
+
+
+<div class="viewcode-block" id="to_interactive_html_string">
+<a class="viewcode-back" href="../../api/exporter.html#ExposoGraph.exporter.to_interactive_html_string">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">to_interactive_html_string</span><span class="p">(</span>
+    <span class="n">engine</span><span class="p">:</span> <span class="n">GraphEngine</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">template_path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Path</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Render a self-contained interactive HTML document.&quot;&quot;&quot;</span>
+    <span class="n">template</span> <span class="o">=</span> <span class="n">_load_viewer_template</span><span class="p">(</span><span class="n">template_path</span><span class="p">)</span>
+    <span class="n">data_script</span> <span class="o">=</span> <span class="n">_graph_data_script</span><span class="p">(</span><span class="n">engine</span><span class="p">)</span>
+    <span class="n">script_tag</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;&lt;script&gt;</span><span class="se">\n</span><span class="si">{</span><span class="n">data_script</span><span class="si">}</span><span class="se">\n</span><span class="s2">&lt;/script&gt;&quot;</span>
+    <span class="n">external_tag</span> <span class="o">=</span> <span class="s1">&#39;&lt;script src=&quot;./graph-data.js&quot;&gt;&lt;/script&gt;&#39;</span>
+
+    <span class="k">if</span> <span class="n">external_tag</span> <span class="ow">in</span> <span class="n">template</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">template</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">external_tag</span><span class="p">,</span> <span class="n">script_tag</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+
+    <span class="n">head_close</span> <span class="o">=</span> <span class="s2">&quot;&lt;/head&gt;&quot;</span>
+    <span class="k">if</span> <span class="n">head_close</span> <span class="ow">in</span> <span class="n">template</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">template</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">head_close</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">script_tag</span><span class="si">}</span><span class="se">\n</span><span class="si">{</span><span class="n">head_close</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">script_tag</span><span class="si">}</span><span class="se">\n</span><span class="si">{</span><span class="n">template</span><span class="si">}</span><span class="s2">&quot;</span></div>
+
+
+
+<div class="viewcode-block" id="to_interactive_html">
+<a class="viewcode-back" href="../../api/exporter.html#ExposoGraph.exporter.to_interactive_html">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">to_interactive_html</span><span class="p">(</span>
+    <span class="n">engine</span><span class="p">:</span> <span class="n">GraphEngine</span><span class="p">,</span>
+    <span class="n">path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Path</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">template_path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Path</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Path</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Write a standalone interactive HTML file with embedded graph data.&quot;&quot;&quot;</span>
+    <span class="n">path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+    <span class="n">html</span> <span class="o">=</span> <span class="n">to_interactive_html_string</span><span class="p">(</span><span class="n">engine</span><span class="p">,</span> <span class="n">template_path</span><span class="o">=</span><span class="n">template_path</span><span class="p">)</span>
+    <span class="n">path</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">path</span><span class="o">.</span><span class="n">write_text</span><span class="p">(</span><span class="n">html</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">path</span></div>
+
+
+
+<div class="viewcode-block" id="ensure_viewer_bundle">
+<a class="viewcode-back" href="../../api/exporter.html#ExposoGraph.exporter.ensure_viewer_bundle">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">ensure_viewer_bundle</span><span class="p">(</span>
+    <span class="n">output_dir</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Path</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">template_dir</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Path</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Path</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Ensure *output_dir* is a usable D3 viewer bundle directory.</span>
+
+<span class="sd">    When *template_dir* contains an ``index.html`` file, it is copied into the</span>
+<span class="sd">    output directory if missing so the generated ``graph-data.js`` has a viewer</span>
+<span class="sd">    to pair with.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">output_dir</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">output_dir</span><span class="p">)</span>
+    <span class="n">output_dir</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">template_dir</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">template_dir</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">template_dir</span><span class="p">)</span>
+        <span class="n">template_index</span> <span class="o">=</span> <span class="n">template_dir</span> <span class="o">/</span> <span class="s2">&quot;index.html&quot;</span>
+        <span class="n">target_index</span> <span class="o">=</span> <span class="n">output_dir</span> <span class="o">/</span> <span class="s2">&quot;index.html&quot;</span>
+        <span class="k">if</span> <span class="n">template_index</span><span class="o">.</span><span class="n">exists</span><span class="p">()</span> <span class="ow">and</span> <span class="n">template_index</span> <span class="o">!=</span> <span class="n">target_index</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">target_index</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+            <span class="n">shutil</span><span class="o">.</span><span class="n">copy2</span><span class="p">(</span><span class="n">template_index</span><span class="p">,</span> <span class="n">target_index</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">output_dir</span></div>
+
+
+
+<div class="viewcode-block" id="export_viewer_bundle">
+<a class="viewcode-back" href="../../api/exporter.html#ExposoGraph.exporter.export_viewer_bundle">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">export_viewer_bundle</span><span class="p">(</span>
+    <span class="n">engine</span><span class="p">:</span> <span class="n">GraphEngine</span><span class="p">,</span>
+    <span class="n">output_dir</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Path</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">template_dir</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Path</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Path</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Write a complete viewer bundle directory.</span>
+
+<span class="sd">    The resulting folder contains ``graph-data.js`` and, when a template is</span>
+<span class="sd">    available, ``index.html``.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">output_dir</span> <span class="o">=</span> <span class="n">ensure_viewer_bundle</span><span class="p">(</span><span class="n">output_dir</span><span class="p">,</span> <span class="n">template_dir</span><span class="o">=</span><span class="n">template_dir</span><span class="p">)</span>
+    <span class="n">to_graph_data_js</span><span class="p">(</span><span class="n">engine</span><span class="p">,</span> <span class="n">output_dir</span> <span class="o">/</span> <span class="s2">&quot;graph-data.js&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">output_dir</span></div>
+
+
+
+<div class="viewcode-block" id="to_json">
+<a class="viewcode-back" href="../../api/exporter.html#ExposoGraph.exporter.to_json">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">to_json</span><span class="p">(</span><span class="n">engine</span><span class="p">:</span> <span class="n">GraphEngine</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Path</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Write a plain JSON export.&quot;&quot;&quot;</span>
+    <span class="n">path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="n">_clean_for_js</span><span class="p">(</span><span class="n">engine</span><span class="o">.</span><span class="n">to_dict</span><span class="p">())</span>
+    <span class="n">path</span><span class="o">.</span><span class="n">write_text</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">),</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">path</span></div>
+
+
+
+<div class="viewcode-block" id="to_gexf">
+<a class="viewcode-back" href="../../api/exporter.html#ExposoGraph.exporter.to_gexf">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">to_gexf</span><span class="p">(</span><span class="n">engine</span><span class="p">:</span> <span class="n">GraphEngine</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Path</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Write GEXF (Gephi) format.&quot;&quot;&quot;</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">networkx</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">nx</span>
+
+    <span class="n">path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+    <span class="n">nx</span><span class="o">.</span><span class="n">write_gexf</span><span class="p">(</span><span class="n">engine</span><span class="o">.</span><span class="n">G</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">path</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">path</span></div>
+
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../index.html">ExposoGraph</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../quickstart.html">Quick Start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../deployment.html">Deployment</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../schema.html">Schema Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../gene-panels.html">Gene Panels &amp; Activity Scores</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../api/config.html"><code class="docutils literal notranslate"><span class="pre">ExposoGraph.config</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/models.html"><code class="docutils literal notranslate"><span class="pre">ExposoGraph.models</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/engine.html"><code class="docutils literal notranslate"><span class="pre">ExposoGraph.engine</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/exporter.html"><code class="docutils literal notranslate"><span class="pre">ExposoGraph.exporter</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/llm_extractor.html"><code class="docutils literal notranslate"><span class="pre">ExposoGraph.llm_extractor</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/reference_data.html"><code class="docutils literal notranslate"><span class="pre">ExposoGraph.reference_data</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/storage.html"><code class="docutils literal notranslate"><span class="pre">ExposoGraph.storage</span></code></a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Project</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../changelog.html">Changelog</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;2026, KaziLab.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 8.2.3</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 0.7.16</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

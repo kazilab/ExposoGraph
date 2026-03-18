@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="./">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>ExposoGraph &#8212; ExposoGraph</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=5ecbeea2" />
+    <link rel="stylesheet" type="text/css" href="_static/alabaster.css?v=12dfc556" />
+    <script src="_static/documentation_options.js?v=d45e8c67"></script>
+    <script src="_static/doctools.js?v=9bcbadda"></script>
+    <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Quick Start" href="quickstart.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="exposograph">
+<h1>ExposoGraph<a class="headerlink" href="#exposograph" title="Link to this heading">¶</a></h1>
+<p><strong>ExposoGraph</strong> is a Python toolkit for building, curating, and exporting
+carcinogen metabolism knowledge graphs using LLM-powered extraction and
+manual entry.</p>
+<p>Part of the <strong>CarcinoGenomic Platform</strong> — a 5-layer computational pipeline
+for individualized carcinogen metabolism risk assessment from germline DNA.</p>
+<p>Version: <strong>0.0.1</strong>
+Developed by: <strong>Data analysis team &#64; KaziLab</strong>
+Contact: <strong>exposograph&#64;kazilab.se</strong>
+Copyright: <strong>KaziLab</strong></p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This project is under active development.</p>
+</div>
+<div class="toctree-wrapper compound">
+<p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Quick Start</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="quickstart.html#installation">Installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="quickstart.html#streamlit-app">Streamlit App</a></li>
+<li class="toctree-l2"><a class="reference internal" href="quickstart.html#jupyter-notebook">Jupyter Notebook</a></li>
+<li class="toctree-l2"><a class="reference internal" href="quickstart.html#python-library">Python Library</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="deployment.html">Deployment</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="deployment.html#streamlit-cloud">Streamlit Cloud</a></li>
+<li class="toctree-l2"><a class="reference internal" href="deployment.html#local-development">Local Development</a></li>
+<li class="toctree-l2"><a class="reference internal" href="deployment.html#pypi-publishing">PyPI Publishing</a></li>
+</ul>
+</li>
+</ul>
+</div>
+<div class="toctree-wrapper compound">
+<p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="schema.html">Schema Reference</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="schema.html#node-types">Node Types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="schema.html#edge-types">Edge Types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="schema.html#annotation-fields">Annotation Fields</a></li>
+<li class="toctree-l2"><a class="reference internal" href="schema.html#structured-provenance">Structured Provenance</a></li>
+<li class="toctree-l2"><a class="reference internal" href="schema.html#curation-fields">Curation Fields</a></li>
+<li class="toctree-l2"><a class="reference internal" href="schema.html#validation">Validation</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="gene-panels.html">Gene Panels &amp; Activity Scores</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="gene-panels.html#tier-1-core-panel-13-genes">Tier 1: Core Panel (13 genes)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gene-panels.html#tier-2-extended-panel-15-genes">Tier 2: Extended Panel (15 genes)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gene-panels.html#activity-scores">Activity Scores</a></li>
+</ul>
+</li>
+</ul>
+</div>
+<div class="toctree-wrapper compound">
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="api/config.html"><code class="docutils literal notranslate"><span class="pre">ExposoGraph.config</span></code></a><ul>
+<li class="toctree-l2"><a class="reference internal" href="api/config.html#ExposoGraph.config.AppMode"><code class="docutils literal notranslate"><span class="pre">AppMode</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/config.html#ExposoGraph.config.normalize_app_mode"><code class="docutils literal notranslate"><span class="pre">normalize_app_mode()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/config.html#ExposoGraph.config.get_app_mode"><code class="docutils literal notranslate"><span class="pre">get_app_mode()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/config.html#ExposoGraph.config.persistence_enabled"><code class="docutils literal notranslate"><span class="pre">persistence_enabled()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="api/models.html"><code class="docutils literal notranslate"><span class="pre">ExposoGraph.models</span></code></a><ul>
+<li class="toctree-l2"><a class="reference internal" href="api/models.html#enums">Enums</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/models.html#models">Models</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="api/engine.html"><code class="docutils literal notranslate"><span class="pre">ExposoGraph.engine</span></code></a><ul>
+<li class="toctree-l2"><a class="reference internal" href="api/engine.html#ExposoGraph.engine.GraphEngine"><code class="docutils literal notranslate"><span class="pre">GraphEngine</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="api/exporter.html"><code class="docutils literal notranslate"><span class="pre">ExposoGraph.exporter</span></code></a><ul>
+<li class="toctree-l2"><a class="reference internal" href="api/exporter.html#ExposoGraph.exporter.parse_graph_data_text"><code class="docutils literal notranslate"><span class="pre">parse_graph_data_text()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/exporter.html#ExposoGraph.exporter.parse_graph_data_js"><code class="docutils literal notranslate"><span class="pre">parse_graph_data_js()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/exporter.html#ExposoGraph.exporter.parse_graph_html"><code class="docutils literal notranslate"><span class="pre">parse_graph_html()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/exporter.html#ExposoGraph.exporter.parse_graph_artifact"><code class="docutils literal notranslate"><span class="pre">parse_graph_artifact()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/exporter.html#ExposoGraph.exporter.to_graph_data_js"><code class="docutils literal notranslate"><span class="pre">to_graph_data_js()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/exporter.html#ExposoGraph.exporter.to_interactive_html_string"><code class="docutils literal notranslate"><span class="pre">to_interactive_html_string()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/exporter.html#ExposoGraph.exporter.to_interactive_html"><code class="docutils literal notranslate"><span class="pre">to_interactive_html()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/exporter.html#ExposoGraph.exporter.ensure_viewer_bundle"><code class="docutils literal notranslate"><span class="pre">ensure_viewer_bundle()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/exporter.html#ExposoGraph.exporter.export_viewer_bundle"><code class="docutils literal notranslate"><span class="pre">export_viewer_bundle()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/exporter.html#ExposoGraph.exporter.to_json"><code class="docutils literal notranslate"><span class="pre">to_json()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/exporter.html#ExposoGraph.exporter.to_gexf"><code class="docutils literal notranslate"><span class="pre">to_gexf()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="api/llm_extractor.html"><code class="docutils literal notranslate"><span class="pre">ExposoGraph.llm_extractor</span></code></a><ul>
+<li class="toctree-l2"><a class="reference internal" href="api/llm_extractor.html#ExposoGraph.llm_extractor.extract_graph"><code class="docutils literal notranslate"><span class="pre">extract_graph()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/llm_extractor.html#ExposoGraph.llm_extractor.SYSTEM_PROMPT"><code class="docutils literal notranslate"><span class="pre">ExposoGraph.llm_extractor.SYSTEM_PROMPT</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/llm_extractor.html#ExposoGraph.llm_extractor.EXAMPLE_INPUT"><code class="docutils literal notranslate"><span class="pre">ExposoGraph.llm_extractor.EXAMPLE_INPUT</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="api/reference_data.html"><code class="docutils literal notranslate"><span class="pre">ExposoGraph.reference_data</span></code></a><ul>
+<li class="toctree-l2"><a class="reference internal" href="api/reference_data.html#gene-panel-data">Gene Panel Data</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/reference_data.html#panel-builders">Panel Builders</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/reference_data.html#lookups">Lookups</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="api/storage.html"><code class="docutils literal notranslate"><span class="pre">ExposoGraph.storage</span></code></a><ul>
+<li class="toctree-l2"><a class="reference internal" href="api/storage.html#ExposoGraph.storage.GraphRevisionSummary"><code class="docutils literal notranslate"><span class="pre">GraphRevisionSummary</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/storage.html#ExposoGraph.storage.GraphRevision"><code class="docutils literal notranslate"><span class="pre">GraphRevision</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/storage.html#ExposoGraph.storage.GraphRepository"><code class="docutils literal notranslate"><span class="pre">GraphRepository</span></code></a></li>
+</ul>
+</li>
+</ul>
+</div>
+<div class="toctree-wrapper compound">
+<p class="caption" role="heading"><span class="caption-text">Project</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="changelog.html">Changelog</a></li>
+</ul>
+</div>
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="#">ExposoGraph</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Quick Start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="deployment.html">Deployment</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="schema.html">Schema Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="gene-panels.html">Gene Panels &amp; Activity Scores</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="api/config.html"><code class="docutils literal notranslate"><span class="pre">ExposoGraph.config</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="api/models.html"><code class="docutils literal notranslate"><span class="pre">ExposoGraph.models</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="api/engine.html"><code class="docutils literal notranslate"><span class="pre">ExposoGraph.engine</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="api/exporter.html"><code class="docutils literal notranslate"><span class="pre">ExposoGraph.exporter</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="api/llm_extractor.html"><code class="docutils literal notranslate"><span class="pre">ExposoGraph.llm_extractor</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="api/reference_data.html"><code class="docutils literal notranslate"><span class="pre">ExposoGraph.reference_data</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="api/storage.html"><code class="docutils literal notranslate"><span class="pre">ExposoGraph.storage</span></code></a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Project</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="changelog.html">Changelog</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="#">Documentation overview</a><ul>
+      <li>Next: <a href="quickstart.html" title="next chapter">Quick Start</a></li>
+  </ul></li>
+</ul>
+</div>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;2026, KaziLab.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 8.2.3</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 0.7.16</a>
+      
+      |
+      <a href="_sources/index.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

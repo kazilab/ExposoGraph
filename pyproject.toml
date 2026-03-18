@@ -1,0 +1,77 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "ExposoGraph"
+version = "0.0.1"
+description = "ExposoGraph — LLM-powered extraction and manual curation of carcinogen metabolism pathways"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.10"
+authors = [
+    { name = "Data analysis team @ KaziLab", email = "exposograph@kazilab.se" },
+]
+keywords = [
+    "knowledge-graph",
+    "carcinogen",
+    "pharmacogenomics",
+    "metabolism",
+    "toxicology",
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Bio-Informatics",
+]
+dependencies = [
+    "networkx>=3.2",
+    "pydantic>=2.5",
+    "openai>=1.60.0",
+]
+
+[project.optional-dependencies]
+streamlit = [
+    "streamlit>=1.40.0",
+    "streamlit-agraph>=0.0.45",
+]
+notebook = [
+    "jupyter",
+    "pyvis",
+]
+dev = [
+    "pytest",
+    "ruff",
+    "mypy",
+]
+docs = [
+    "sphinx>=8.2.0",
+    "myst-parser>=4.0.0",
+    "furo>=2024.8.6",
+]
+all = [
+    "kg-builder[streamlit,notebook,dev,docs]",
+]
+
+[project.urls]
+Homepage = "https://github.com/julhashkazi/kg-builder"
+Repository = "https://github.com/julhashkazi/kg-builder"
+Issues = "https://github.com/julhashkazi/kg-builder/issues"
+
+[tool.hatch.build.targets.wheel]
+packages = ["ExposoGraph"]
+
+[tool.ruff]
+target-version = "py310"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
