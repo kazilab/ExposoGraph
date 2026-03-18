@@ -9,6 +9,10 @@ Developed by: **Data analysis team @ KaziLab**
 Contact: **exposograph@kazilab.se**
 Copyright: **KaziLab**
 
+## Acknowledgement
+
+Parts of this documentation and code were created with assistance from ChatGPT Codex and Claude Code.
+
 ## Features
 
 - **LLM Extraction** — Describe a carcinogen metabolism pathway in plain English; GPT-4o extracts structured nodes and edges automatically
