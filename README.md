@@ -19,7 +19,7 @@ Parts of this documentation and code were created with assistance from ChatGPT C
 - **Manual Entry** — Add and annotate nodes (Carcinogen, Enzyme, Metabolite, DNA_Adduct, Pathway) and edges with full provenance tracking
 - **Interactive Preview** — Color-coded graph visualization with drag-to-rearrange and zoom
 - **Rich Annotations** — Source databases (IARC, KEGG, CTD, PharmVar, CPIC, GTEx), PubMed IDs, tissue context, pharmacogenomic variants, activity scores
-- **Multiple Export Formats** — JSON, D3.js viewer (`graph-data.js`), GEXF (Gephi)
+- **Multiple Export Formats** — standalone interactive HTML, JSON, D3.js viewer (`graph-data.js`), GEXF (Gephi)
 - **Validation** — Checks for dangling edges, missing carcinogen context nodes
 
 ## Quick Start
@@ -28,7 +28,7 @@ Parts of this documentation and code were created with assistance from ChatGPT C
 
 ```bash
 pip install -e ".[streamlit]"
-streamlit run kg_builder/app.py
+streamlit run ExposoGraph/app.py
 ```
 
 App mode defaults to `stateless`, which disables server-side saves and
@@ -36,15 +36,15 @@ is appropriate for public web deployment. To enable local revision history
 and file saves on your own machine:
 
 ```bash
-export KG_BUILDER_MODE=local
-streamlit run kg_builder/app.py
+export ExposoGraph_MODE=local
+streamlit run ExposoGraph/app.py
 ```
 
 ### Jupyter Notebook
 
 ```bash
 pip install -e ".[notebook]"
-jupyter notebook kg_builder_notebook.ipynb
+jupyter notebook ExposoGraph_notebook.ipynb
 ```
 
 ### Python Library
@@ -54,7 +54,7 @@ pip install -e .
 ```
 
 ```python
-from kg_builder import GraphEngine, extract_graph
+from ExposoGraph import GraphEngine, extract_graph
 
 # LLM extraction
 kg = extract_graph("Benzo[a]pyrene is activated by CYP1A1...")
@@ -84,7 +84,7 @@ OPENAI_API_KEY = "sk-..."
 ## Project Structure
 
 ```
-kg_builder/
+ExposoGraph/
 ├── __init__.py        # Public API exports
 ├── app.py             # Streamlit UI
 ├── engine.py          # NetworkX-backed graph engine

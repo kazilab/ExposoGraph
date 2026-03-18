@@ -55,7 +55,7 @@ docs = [
     "furo>=2024.8.6",
 ]
 all = [
-    "kg-builder[streamlit,notebook,dev,docs]",
+    "ExposoGraph[streamlit,notebook,dev,docs]",
 ]
 
 [project.urls]
