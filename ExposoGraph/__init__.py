@@ -2,6 +2,9 @@
 
 Build, curate, and export carcinogen metabolism knowledge graphs
 using LLM-powered extraction and manual entry.
+
+Parts of this documentation and code were created with assistance
+from ChatGPT Codex and Claude Code.
 """
 
 from .branding import (
