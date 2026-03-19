@@ -18,22 +18,23 @@ from .branding import (
 
 __version__ = APP_VERSION
 
-from .config import AppMode, get_app_mode, normalize_app_mode, persistence_enabled
+from .config import AppMode, LLMProvider, get_app_mode, normalize_app_mode, persistence_enabled
 from .engine import GraphEngine
 from .exporter import (
     ensure_viewer_bundle,
     export_viewer_bundle,
     parse_graph_artifact,
+    parse_graph_data_js,
     parse_graph_data_text,
     parse_graph_html,
-    parse_graph_data_js,
     to_gexf,
     to_graph_data_js,
     to_interactive_html,
     to_interactive_html_string,
     to_json,
 )
-from .llm_extractor import extract_graph
+from .llm_backend import LLMBackend, OllamaBackend, OpenAIBackend, UsageRecord
+from .llm_extractor import extract_graph, extract_graph_with_usage
 from .models import (
     CurationConfidence,
     CurationRecord,
@@ -55,12 +56,25 @@ from .reference_data import (
     get_activity_score_references,
     get_activity_scores,
 )
+from .graph_analysis import (
+    MetabolismChain,
+    VariantImpact,
+    all_shortest_paths,
+    centrality,
+    metabolism_chain,
+    pathway_subgraph,
+    shortest_path,
+    variant_impact_score,
+)
+from .db_clients import CTDClient, IARCClassifier, IARCGroup, KEGGClient
+from .seeder import seed_from_ctd, seed_from_kegg_pathway, seed_iarc_classification
 from .storage import GraphRepository, GraphRevision, GraphRevisionSummary
 
 __all__ = [
-    "ACTIVITY_SCORES",
     "ACTIVITY_SCORE_METADATA",
+    "ACTIVITY_SCORES",
     "APP_NAME",
+    "CTDClient",
     "APP_TAGLINE",
     "APP_VERSION",
     "AppMode",
@@ -74,31 +88,51 @@ __all__ = [
     "EdgeType",
     "GraphEngine",
     "GraphRepository",
+    "IARCClassifier",
+    "IARCGroup",
     "GraphRevision",
     "GraphRevisionSummary",
+    "KEGGClient",
     "KnowledgeGraph",
+    "LLMBackend",
+    "LLMProvider",
+    "MetabolismChain",
     "Node",
     "NodeType",
+    "OllamaBackend",
+    "OpenAIBackend",
     "ProvenanceRecord",
-    "ensure_viewer_bundle",
-    "export_viewer_bundle",
-    "parse_graph_artifact",
-    "parse_graph_data_text",
-    "parse_graph_html",
+    "VariantImpact",
     "build_full_panel",
     "build_tier1_panel",
     "build_tier2_panel",
+    "ensure_viewer_bundle",
+    "export_viewer_bundle",
+    "all_shortest_paths",
+    "centrality",
+    "UsageRecord",
     "extract_graph",
-    "get_app_mode",
+    "extract_graph_with_usage",
     "get_activity_score_metadata",
     "get_activity_score_references",
     "get_activity_scores",
+    "get_app_mode",
+    "metabolism_chain",
     "normalize_app_mode",
-    "persistence_enabled",
-    "to_interactive_html",
-    "to_interactive_html_string",
+    "pathway_subgraph",
+    "parse_graph_artifact",
     "parse_graph_data_js",
+    "parse_graph_data_text",
+    "parse_graph_html",
+    "persistence_enabled",
+    "seed_from_ctd",
+    "seed_from_kegg_pathway",
+    "seed_iarc_classification",
+    "shortest_path",
     "to_gexf",
     "to_graph_data_js",
+    "to_interactive_html",
+    "to_interactive_html_string",
     "to_json",
+    "variant_impact_score",
 ]

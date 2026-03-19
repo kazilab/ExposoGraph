@@ -1,7 +1,7 @@
 """LLM-powered entity / relation extraction for the knowledge graph.
 
-Supports OpenAI models via structured outputs. Falls back to JSON-mode
-parsing when structured output is unavailable.
+Supports multiple LLM backends (OpenAI, Ollama) via a pluggable protocol.
+Falls back to JSON-mode parsing when structured output is unavailable.
 """
 
 from __future__ import annotations
@@ -11,6 +11,7 @@ import logging
 import os
 from typing import Optional
 
+from .llm_backend import LLMBackend, OpenAIBackend, UsageRecord
 from .models import KnowledgeGraph
 
 logger = logging.getLogger(__name__)
@@ -107,48 +108,34 @@ def extract_graph(
     model: str = "gpt-4o",
     api_key: Optional[str] = None,
     base_url: Optional[str] = None,
+    backend: Optional[LLMBackend] = None,
 ) -> KnowledgeGraph:
-    """Send *text* to the LLM and return a validated KnowledgeGraph."""
-    try:
-        from openai import OpenAI
-    except ModuleNotFoundError as exc:  # pragma: no cover - depends on environment
-        raise RuntimeError(
-            "The 'openai' package is required for LLM extraction. "
-            "Install project dependencies with `pip install -e .` or "
-            "`pip install openai`."
-        ) from exc
+    """Send *text* to the LLM and return a validated KnowledgeGraph.
 
-    client = OpenAI(
-        api_key=api_key or os.environ.get("OPENAI_API_KEY"),
-        base_url=base_url or os.environ.get("OPENAI_BASE_URL"),
+    If *backend* is provided it is used directly; otherwise an
+    :class:`OpenAIBackend` is created from the given credentials.
+    """
+    result, _usage = extract_graph_with_usage(
+        text, model=model, api_key=api_key, base_url=base_url, backend=backend,
     )
+    return result
 
-    try:
-        response = client.beta.chat.completions.parse(
-            model=model,
-            messages=[
-                {"role": "system", "content": SYSTEM_PROMPT},
-                {"role": "user", "content": text},
-            ],
-            response_format=KnowledgeGraph,
-        )
-        kg = response.choices[0].message.parsed
-        if kg is not None:
-            return kg
-    except Exception as exc:
-        logger.warning("Structured output failed, falling back to JSON mode: %s", exc)
 
-    # Fallback: regular completion with JSON mode
-    response = client.chat.completions.create(
-        model=model,
-        messages=[
-            {"role": "system", "content": SYSTEM_PROMPT},
-            {"role": "user", "content": text},
-        ],
-        response_format={"type": "json_object"},
-    )
-    raw = json.loads(response.choices[0].message.content)
-    return KnowledgeGraph(**raw)
+def extract_graph_with_usage(
+    text: str,
+    *,
+    model: str = "gpt-4o",
+    api_key: Optional[str] = None,
+    base_url: Optional[str] = None,
+    backend: Optional[LLMBackend] = None,
+) -> tuple[KnowledgeGraph, UsageRecord]:
+    """Like :func:`extract_graph` but also returns token usage metadata."""
+    if backend is None:
+        backend = OpenAIBackend(api_key=api_key, base_url=base_url)
+
+    raw, usage = backend.extract_json(text, SYSTEM_PROMPT, model)
+    kg = KnowledgeGraph(**raw)
+    return kg, usage
 
 
 EXAMPLE_INPUT = """\

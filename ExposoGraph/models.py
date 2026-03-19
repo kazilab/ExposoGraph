@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
+import hashlib
+import re
 from enum import Enum
 from typing import Optional
 
-from pydantic import AliasChoices, BaseModel, ConfigDict, Field, model_validator
+from pydantic import AliasChoices, BaseModel, ConfigDict, Field, field_validator, model_validator
 
 
 # ── Enums ────────────────────────────────────────────────────────────────
@@ -70,16 +72,27 @@ class CurationRecord(BaseModel):
     reviewed_at: Optional[str] = None
     notes: Optional[str] = None
 
+    @field_validator("reviewed_at")
+    @classmethod
+    def _validate_reviewed_at(cls, v: str | None) -> str | None:
+        if v is None:
+            return v
+        import datetime
+
+        for fmt in ("%Y-%m-%d", "%Y-%m-%dT%H:%M:%S", "%Y-%m-%dT%H:%M:%S%z"):
+            try:
+                datetime.datetime.strptime(v, fmt)
+                return v
+            except ValueError:
+                continue
+        raise ValueError(
+            f"reviewed_at must be a date string (YYYY-MM-DD or ISO 8601), got {v!r}"
+        )
+
 
 def _join_unique(values: list[str]) -> str | None:
-    seen: list[str] = []
-    for value in values:
-        cleaned = value.strip()
-        if cleaned and cleaned not in seen:
-            seen.append(cleaned)
-    if not seen:
-        return None
-    return "; ".join(seen)
+    unique = dict.fromkeys(v for value in values if (v := value.strip()))
+    return "; ".join(unique) if unique else None
 
 
 def _first_nonempty(values: list[str]) -> str | None:
@@ -144,10 +157,28 @@ class Node(BaseModel):
     provenance: list[ProvenanceRecord] = Field(default_factory=list)
     curation: Optional[CurationRecord] = None
 
+    @classmethod
+    def generate_id(cls, label: str) -> str:
+        """Derive a safe node ID from a label.
+
+        Simple labels (e.g. ``"CYP1A1"``) pass through unchanged.  Labels
+        containing special characters that are stripped during sanitisation
+        get a short hash suffix to avoid collisions (e.g.
+        ``"Benzo[a]pyrene"`` → ``"Benzo_a_pyrene_a4f2c1"``).
+        """
+        sanitized = re.sub(r"[^A-Za-z0-9_.-]+", "_", label).strip("_.")
+        if not sanitized:
+            raise ValueError("Cannot generate an ID from an empty label")
+        # Append hash only when characters were actually stripped
+        if sanitized != label:
+            short_hash = hashlib.sha256(label.encode()).hexdigest()[:6]
+            sanitized = f"{sanitized}_{short_hash}"
+        return sanitized
+
     @model_validator(mode="after")
     def _normalize(self) -> "Node":
         if not self.id:
-            self.id = self.label.replace(" ", "_").replace(",", "")
+            self.id = self.generate_id(self.label)
         _normalize_provenance_fields(self, summary_only_fields=("evidence",))
         return self
 
@@ -178,3 +209,20 @@ class Edge(BaseModel):
 class KnowledgeGraph(BaseModel):
     nodes: list[Node] = Field(default_factory=list)
     edges: list[Edge] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def _check_edge_references(self) -> "KnowledgeGraph":
+        node_ids = {n.id for n in self.nodes}
+        bad: list[str] = []
+        for edge in self.edges:
+            if edge.source not in node_ids:
+                bad.append(f"Edge references missing source node: {edge.source!r}")
+            if edge.target not in node_ids:
+                bad.append(f"Edge references missing target node: {edge.target!r}")
+            if edge.carcinogen and edge.carcinogen not in node_ids:
+                bad.append(f"Edge references missing carcinogen node: {edge.carcinogen!r}")
+        if bad:
+            raise ValueError(
+                f"Referential integrity errors ({len(bad)}):\n  " + "\n  ".join(bad)
+            )
+        return self

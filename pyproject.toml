@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "ExposoGraph"
-version = "0.0.1"
+version = "0.0.2"
 description = "ExposoGraph — LLM-powered extraction and manual curation of carcinogen metabolism pathways"
 readme = "README.md"
 license = "MIT"
@@ -32,13 +32,23 @@ classifiers = [
 dependencies = [
     "networkx>=3.2",
     "pydantic>=2.5",
-    "openai>=1.60.0",
+    "pyjson5>=2.0",
 ]
 
 [project.optional-dependencies]
+llm = [
+    "openai>=1.60.0",
+]
+ollama = [
+    "requests>=2.31",
+]
+db = [
+    "requests>=2.31",
+]
 streamlit = [
     "streamlit>=1.40.0",
     "streamlit-agraph>=0.0.45",
+    "ExposoGraph[llm]",
 ]
 notebook = [
     "jupyter",
@@ -46,6 +56,7 @@ notebook = [
 ]
 dev = [
     "pytest",
+    "pytest-cov",
     "ruff",
     "mypy",
 ]
@@ -55,13 +66,13 @@ docs = [
     "furo>=2024.8.6",
 ]
 all = [
-    "ExposoGraph[streamlit,notebook,dev,docs]",
+    "ExposoGraph[llm,ollama,db,streamlit,notebook,dev,docs]",
 ]
 
 [project.urls]
-Homepage = "https://github.com/julhashkazi/kg-builder"
-Repository = "https://github.com/julhashkazi/kg-builder"
-Issues = "https://github.com/julhashkazi/kg-builder/issues"
+Homepage = "https://github.com/kazilab/ExposoGraph"
+Repository = "https://github.com/kazilab/ExposoGraph"
+Issues = "https://github.com/kazilab/ExposoGraph/issues"
 
 [tool.hatch.build.targets.wheel]
 packages = ["ExposoGraph"]
@@ -73,5 +84,48 @@ line-length = 100
 [tool.ruff.lint]
 select = ["E", "F", "I", "W"]
 
+[tool.mypy]
+python_version = "3.10"
+strict = true
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+
+[[tool.mypy.overrides]]
+module = [
+    "streamlit.*",
+    "streamlit_agraph.*",
+    "pyvis.*",
+    "networkx.*",
+    "pyjson5.*",
+    "openai.*",
+    "requests.*",
+]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = [
+    "ExposoGraph.app",
+    "ExposoGraph._app_shared",
+    "ExposoGraph.ui_sidebar",
+    "ExposoGraph.ui_extract",
+    "ExposoGraph.ui_manual",
+    "ExposoGraph.ui_preview",
+    "ExposoGraph.ui_data",
+]
+disallow_untyped_defs = false
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+addopts = [
+    "--cov=ExposoGraph",
+    "--cov-report=term-missing",
+    "--cov-fail-under=85",
+]
+
+[tool.coverage.run]
+omit = [
+    "ExposoGraph/app.py",
+    "ExposoGraph/_app_shared.py",
+    "ExposoGraph/ui_*.py",
+]

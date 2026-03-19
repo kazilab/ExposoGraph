@@ -44,16 +44,30 @@ class GraphRepository:
     def __init__(self, db_path: str | Path) -> None:
         self.db_path = Path(db_path)
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
+        self._conn = self._create_connection()
         self._initialize()
 
-    def _connect(self) -> sqlite3.Connection:
-        conn = sqlite3.connect(str(self.db_path))
+    def _create_connection(self) -> sqlite3.Connection:
+        conn = sqlite3.connect(str(self.db_path), check_same_thread=False)
         conn.row_factory = sqlite3.Row
         conn.execute("PRAGMA foreign_keys = ON")
         return conn
 
+    @property
+    def connection(self) -> sqlite3.Connection:
+        """Return the persistent connection, reconnecting if closed."""
+        try:
+            self._conn.execute("SELECT 1")
+        except (sqlite3.ProgrammingError, sqlite3.OperationalError):
+            self._conn = self._create_connection()
+        return self._conn
+
+    def close(self) -> None:
+        """Close the persistent connection."""
+        self._conn.close()
+
     def _initialize(self) -> None:
-        with self._connect() as conn:
+        with self.connection as conn:
             conn.executescript(
                 """
                 CREATE TABLE IF NOT EXISTS graphs (
@@ -123,7 +137,7 @@ class GraphRepository:
         timestamp = _utc_now()
         graph_json = json.dumps(kg.model_dump(mode="json"), indent=2)
 
-        with self._connect() as conn:
+        with self.connection as conn:
             existing = conn.execute(
                 "SELECT created_at FROM graphs WHERE graph_key = ?",
                 (graph_key,),
@@ -140,15 +154,6 @@ class GraphRepository:
                 (graph_key, graph_name, created_at, timestamp),
             )
 
-            next_revision = conn.execute(
-                """
-                SELECT COALESCE(MAX(revision_number), 0) + 1 AS next_revision
-                FROM graph_revisions
-                WHERE graph_key = ?
-                """,
-                (graph_key,),
-            ).fetchone()["next_revision"]
-
             cursor = conn.execute(
                 """
                 INSERT INTO graph_revisions(
@@ -162,18 +167,20 @@ class GraphRepository:
                     graph_json,
                     html
                 )
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                SELECT ?, ?, COALESCE(MAX(revision_number), 0) + 1, ?, ?, ?, ?, ?, ?
+                FROM graph_revisions
+                WHERE graph_key = ?
                 """,
                 (
                     graph_key,
                     graph_name,
-                    next_revision,
                     timestamp,
                     note,
                     len(kg.nodes),
                     len(kg.edges),
                     graph_json,
                     html,
+                    graph_key,
                 ),
             )
 
@@ -204,7 +211,7 @@ class GraphRepository:
         )
 
     def list_graphs(self) -> list[GraphRevisionSummary]:
-        with self._connect() as conn:
+        with self.connection as conn:
             rows = conn.execute(
                 """
                 SELECT r.*
@@ -222,7 +229,7 @@ class GraphRepository:
         return [self._summary_from_row(row) for row in rows]
 
     def list_revisions(self, graph_key: str) -> list[GraphRevisionSummary]:
-        with self._connect() as conn:
+        with self.connection as conn:
             rows = conn.execute(
                 """
                 SELECT *
@@ -235,7 +242,7 @@ class GraphRepository:
         return [self._summary_from_row(row) for row in rows]
 
     def get_revision(self, revision_id: int) -> GraphRevision | None:
-        with self._connect() as conn:
+        with self.connection as conn:
             row = conn.execute(
                 "SELECT * FROM graph_revisions WHERE revision_id = ?",
                 (revision_id,),
@@ -245,7 +252,7 @@ class GraphRepository:
         return self._revision_from_row(row)
 
     def get_latest_revision(self, graph_key: str) -> GraphRevision | None:
-        with self._connect() as conn:
+        with self.connection as conn:
             row = conn.execute(
                 """
                 SELECT *

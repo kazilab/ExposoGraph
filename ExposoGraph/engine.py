@@ -52,20 +52,13 @@ class GraphEngine:
     # ── Bulk operations ──────────────────────────────────────────────────
 
     def load(self, kg: KnowledgeGraph) -> list[str]:
-        """Load a KnowledgeGraph, skipping edges with missing node references.
+        """Replace the current graph with *kg*.
 
+        Clears all existing nodes and edges before loading.
         Returns a list of warning messages for any skipped edges.
         """
-        warnings: list[str] = []
-        for node in kg.nodes:
-            self.add_node(node)
-        for edge in kg.edges:
-            try:
-                self.add_edge(edge)
-            except ValueError as exc:
-                warnings.append(str(exc))
-                logger.warning("Skipped edge during load: %s", exc)
-        return warnings
+        self.clear()
+        return self.merge(kg)
 
     def merge(self, kg: KnowledgeGraph) -> list[str]:
         """Additive merge — new nodes/edges are added, existing ones updated.
@@ -90,11 +83,11 @@ class GraphEngine:
 
     @property
     def node_count(self) -> int:
-        return self.G.number_of_nodes()
+        return int(self.G.number_of_nodes())
 
     @property
     def edge_count(self) -> int:
-        return self.G.number_of_edges()
+        return int(self.G.number_of_edges())
 
     def get_node(self, node_id: str) -> dict[str, Any] | None:
         if node_id in self.G:
@@ -115,7 +108,7 @@ class GraphEngine:
 
     # ── Serialization ────────────────────────────────────────────────────
 
-    def to_dict(self) -> dict[str, list]:
+    def to_dict(self) -> dict[str, list[Any]]:
         nodes = [dict(data) for _, data in self.G.nodes(data=True)]
         edges = [dict(data) for _, _, _, data in self.G.edges(keys=True, data=True)]
         return {"nodes": nodes, "edges": edges}

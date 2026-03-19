@@ -12,6 +12,11 @@ class AppMode(str, Enum):
     LOCAL = "local"
 
 
+class LLMProvider(str, Enum):
+    OPENAI = "openai"
+    OLLAMA = "ollama"
+
+
 def normalize_app_mode(value: str | None) -> AppMode:
     """Normalize environment/config values into a supported app mode."""
     if value is None:

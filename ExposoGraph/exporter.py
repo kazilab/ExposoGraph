@@ -7,10 +7,11 @@ a GRAPH_DATA constant from graph-data.js.
 from __future__ import annotations
 
 import json
-import re
 import shutil
 from pathlib import Path
 from typing import Any
+
+import pyjson5
 
 from .branding import APP_NAME, APP_VERSION
 from .engine import GraphEngine
@@ -60,87 +61,15 @@ def _extract_graph_data_object(raw: str) -> str:
     raise ValueError("Could not find the end of the GRAPH_DATA object")
 
 
-def _strip_js_comments(raw: str) -> str:
-    """Remove JS comments without damaging quoted strings."""
-    result: list[str] = []
-    in_string = False
-    string_char = ""
-    escape = False
-    in_line_comment = False
-    in_block_comment = False
-    idx = 0
-
-    while idx < len(raw):
-        ch = raw[idx]
-        nxt = raw[idx + 1] if idx + 1 < len(raw) else ""
-
-        if in_line_comment:
-            if ch == "\n":
-                in_line_comment = False
-                result.append(ch)
-            idx += 1
-            continue
-
-        if in_block_comment:
-            if ch == "*" and nxt == "/":
-                in_block_comment = False
-                idx += 2
-            else:
-                idx += 1
-            continue
-
-        if in_string:
-            result.append(ch)
-            if escape:
-                escape = False
-            elif ch == "\\":
-                escape = True
-            elif ch == string_char:
-                in_string = False
-            idx += 1
-            continue
-
-        if ch in ('"', "'", "`"):
-            in_string = True
-            string_char = ch
-            result.append(ch)
-            idx += 1
-            continue
-
-        if ch == "/" and nxt == "/":
-            in_line_comment = True
-            idx += 2
-            continue
-
-        if ch == "/" and nxt == "*":
-            in_block_comment = True
-            idx += 2
-            continue
-
-        result.append(ch)
-        idx += 1
-
-    return "".join(result)
-
 
 def parse_graph_data_text(raw: str) -> KnowledgeGraph:
     """Parse JS/HTML text that contains a ``GRAPH_DATA`` object assignment.
 
-    Handles unquoted keys, single-line comments, and trailing commas
-    that are valid in JavaScript but not in JSON.
+    Uses a JSON5 parser to handle unquoted keys, single-line comments,
+    and trailing commas that are valid in JavaScript but not in JSON.
     """
     js_obj = _extract_graph_data_object(raw)
-
-    # Strip JS comments
-    js_obj = _strip_js_comments(js_obj)
-
-    # Quote unquoted object keys:  key: → "key":
-    js_obj = re.sub(r"(?<=[{,\n])\s*(\w+)\s*:", r' "\1":', js_obj)
-
-    # Remove trailing commas before } or ]
-    js_obj = re.sub(r",\s*([}\]])", r"\1", js_obj)
-
-    data = json.loads(js_obj)
+    data = pyjson5.loads(js_obj)
     return KnowledgeGraph(**data)
 
 
@@ -302,9 +231,24 @@ def to_json(engine: GraphEngine, path: str | Path) -> Path:
 
 
 def to_gexf(engine: GraphEngine, path: str | Path) -> Path:
-    """Write GEXF (Gephi) format."""
+    """Write GEXF (Gephi) format.
+
+    Non-scalar node/edge attributes (lists, dicts) are serialized to
+    JSON strings since GEXF only supports primitive attribute types.
+    """
     import networkx as nx
 
     path = Path(path)
-    nx.write_gexf(engine.G, str(path))
+    # Deep-copy graph and flatten complex attributes for GEXF compatibility
+    G = engine.G.copy()
+    _SCALAR = (str, int, float, bool)
+    for _node_id, data in G.nodes(data=True):
+        for key, val in list(data.items()):
+            if val is not None and not isinstance(val, _SCALAR):
+                data[key] = json.dumps(val, default=str)
+    for _u, _v, _k, data in G.edges(keys=True, data=True):
+        for key, val in list(data.items()):
+            if val is not None and not isinstance(val, _SCALAR):
+                data[key] = json.dumps(val, default=str)
+    nx.write_gexf(G, str(path))
     return path

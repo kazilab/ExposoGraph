@@ -3,6 +3,8 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 from .models import KnowledgeGraph, Node, NodeType
 
 NCBI_GENE_IDS: dict[str, str] = {
@@ -34,6 +36,38 @@ NCBI_GENE_IDS: dict[str, str] = {
     "UGT2B7": "7364",
     "XPC": "7508",
     "XRCC1": "7515",
+}
+
+# ClinPGx (formerly PharmGKB) accession IDs — verified via PharmGKB API
+CLINPGX_ACCESSIONS: dict[str, str] = {
+    "ABCB1": "PA267",
+    "ABCC2": "PA116",
+    "ABCG2": "PA390",
+    "CYP1A1": "PA27092",
+    "CYP1A2": "PA27093",
+    "CYP1B1": "PA27094",
+    "CYP2A6": "PA121",
+    "CYP2A13": "PA27101",
+    "CYP2C9": "PA126",
+    "CYP2C19": "PA124",
+    "CYP2D6": "PA128",
+    "CYP2E1": "PA129",
+    "CYP3A4": "PA130",
+    "EPHX1": "PA27829",
+    "ERCC2": "PA27848",
+    "GSTM1": "PA182",
+    "GSTP1": "PA29028",
+    "GSTT1": "PA183",
+    "MGMT": "PA239",
+    "NAT1": "PA17",
+    "NAT2": "PA18",
+    "NQO1": "PA31744",
+    "OGG1": "PA31912",
+    "SULT1A1": "PA343",
+    "UGT1A1": "PA420",
+    "UGT2B7": "PA361",
+    "XPC": "PA37413",
+    "XRCC1": "PA369",
 }
 
 DNA_REPAIR_CLASSES: dict[str, str] = {
@@ -68,11 +102,12 @@ def _gtex_ref(symbol: str, tissue: str) -> dict[str, str]:
 
 
 def _clinpgx_ref(symbol: str) -> dict[str, str]:
+    accession = CLINPGX_ACCESSIONS.get(symbol, symbol)
     return {
         "source_db": "ClinPGx",
-        "record_id": symbol,
+        "record_id": accession,
         "citation": f"ClinPGx gene resource for {symbol}",
-        "url": f"https://www.clinpgx.org/gene/{symbol}",
+        "url": f"https://www.clinpgx.org/gene/{accession}",
         "evidence": "Pharmacogenomics and xenobiotic-response gene resource.",
     }
 
@@ -126,7 +161,7 @@ def _gene_entry(
     phase: str | None = None,
     group: str | None = None,
     label: str | None = None,
-) -> dict:
+) -> dict[str, Any]:
     return {
         "id": symbol,
         "label": label or symbol,
@@ -152,7 +187,7 @@ def _activity_score_meta(
 
 # ── Tier 1: Core Carcinogen-Metabolizing Enzyme Panel (13 genes) ─────────
 
-TIER1_GENES: list[dict] = [
+TIER1_GENES: list[dict[str, Any]] = [
     _gene_entry(
         "CYP1A1",
         phase="I",
@@ -248,7 +283,7 @@ TIER1_GENES: list[dict] = [
 
 # ── Tier 2: Extended Gene Panel (15 genes) ───────────────────────────────
 
-TIER2_GENES: list[dict] = [
+TIER2_GENES: list[dict[str, Any]] = [
     # Phase II
     _gene_entry(
         "SULT1A1",
@@ -365,7 +400,7 @@ TIER2_GENES: list[dict] = [
 # ── Activity Score Reference (per-allele values, CPIC-format) ────────────
 # Key = gene, value = list of {allele, value, phenotype, confidence}
 
-ACTIVITY_SCORES: dict[str, list[dict]] = {
+ACTIVITY_SCORES: dict[str, list[dict[str, Any]]] = {
     "CYP2D6": [
         {"allele": "*1, *2, *35", "value": 1.0, "phenotype": "Normal Metabolizer", "confidence": "High"},
         {"allele": "*9, *17, *29, *41", "value": 0.5, "phenotype": "NM (lower range)", "confidence": "High"},
@@ -466,18 +501,33 @@ ACTIVITY_SCORE_METADATA: dict[str, dict[str, object]] = {
         "Allele-function and activity-score conventions are aligned to pharmacogene interpretation resources.",
         _clinpgx_ref("CYP2D6"),
         _pharmvar_ref("CYP2D6"),
+        _pubmed_ref(
+            "31562822",
+            "Clinical Pharmacogenetics Implementation Consortium Guideline (CPIC) for CYP2D6 and CYP2C19 Genotypes and Dosing of Tricyclic Antidepressants: 2016 Update.",
+            "CPIC guideline defining CYP2D6 activity score framework and allele-function assignments.",
+        ),
     ),
     "CYP2C9": _activity_score_meta(
         "Guideline-backed pharmacogene",
         "Core pharmacogene with star-allele interpretation anchored to ClinPGx/PharmVar resources.",
         _clinpgx_ref("CYP2C9"),
         _pharmvar_ref("CYP2C9"),
+        _pubmed_ref(
+            "28198005",
+            "Clinical Pharmacogenetics Implementation Consortium (CPIC) Guideline for Pharmacogenetics-Guided Warfarin Dosing: 2017 Update.",
+            "CPIC guideline defining CYP2C9 allele-function and activity score assignments.",
+        ),
     ),
     "CYP2C19": _activity_score_meta(
         "Guideline-backed pharmacogene",
         "Core pharmacogene with star-allele interpretation anchored to ClinPGx/PharmVar resources.",
         _clinpgx_ref("CYP2C19"),
         _pharmvar_ref("CYP2C19"),
+        _pubmed_ref(
+            "29385237",
+            "Clinical Pharmacogenetics Implementation Consortium (CPIC) Guideline for CYP2C19 and Proton Pump Inhibitor Dosing.",
+            "CPIC guideline defining CYP2C19 allele-function and metabolizer phenotype assignments.",
+        ),
     ),
     "NAT2": _activity_score_meta(
         "Phenotype-backed pharmacogene",
@@ -495,6 +545,11 @@ ACTIVITY_SCORE_METADATA: dict[str, dict[str, object]] = {
         "UGT1A1 star-allele activity groupings are used as pharmacogene-style interpretation aids.",
         _clinpgx_ref("UGT1A1"),
         _ncbi_gene_ref("UGT1A1"),
+        _pubmed_ref(
+            "24296998",
+            "Clinical Pharmacogenetics Implementation Consortium (CPIC) Guidelines for UGT1A1 and Atazanavir Prescribing.",
+            "CPIC guideline defining UGT1A1 allele-function and activity groupings.",
+        ),
     ),
     "CYP2A6": _activity_score_meta(
         "Database-backed pharmacogene",
@@ -503,7 +558,7 @@ ACTIVITY_SCORE_METADATA: dict[str, dict[str, object]] = {
         _pharmvar_ref("CYP2A6"),
         _pubmed_ref(
             "29194389",
-            "CYP2A6 Genotype and Smoking Behavior in Current Smokers Screened for Lung Cancer.",
+            "Variation in CYP2A6 Activity and Personalized Medicine.",
             "Supports CYP2A6 metabolizer-group interpretation in nicotine metabolism.",
         ),
     ),
@@ -514,7 +569,7 @@ ACTIVITY_SCORE_METADATA: dict[str, dict[str, object]] = {
         _pharmvar_ref("CYP3A4"),
         _pubmed_ref(
             "23665933",
-            "A common nonfunctional CYP3A4 intron 6 polymorphism significantly affects tacrolimus pharmacokinetics in European-American kidney transplant recipients.",
+            "CYP3A4 intron 6 C>T polymorphism (CYP3A4*22) is associated with reduced CYP3A4 protein level and function in human liver microsomes.",
             "Supports reduced-function interpretation of CYP3A4*22.",
         ),
     ),
@@ -603,15 +658,20 @@ ACTIVITY_SCORE_METADATA: dict[str, dict[str, object]] = {
         "XPC repair-capacity values are heuristic and should be treated as exploratory annotations rather than clinical scores.",
         _ncbi_gene_ref("XPC"),
         _ctd_ref("XPC", "DNA Repair (NER)"),
+        _pubmed_ref(
+            "22592359",
+            "XPC Lys939Gln polymorphism contributes to colorectal cancer susceptibility: evidence from a meta-analysis.",
+            "Meta-analysis supporting functional interpretation of the XPC Lys939Gln variant on NER capacity.",
+        ),
     ),
     "OGG1": _activity_score_meta(
         "Research-use literature-derived",
         "OGG1 values summarize the Ser326Cys literature and should be used only for research interpretation.",
         _ncbi_gene_ref("OGG1"),
         _pubmed_ref(
-            "41024270",
-            "The OGG1 Ser326Cys polymorphism: molecular mechanisms of disease susceptibility and precision medicine applications.",
-            "Provides review-level support for functional interpretation of the OGG1 Ser326Cys variant.",
+            "25588927",
+            "OGG1 Ser326Cys polymorphism and cancer risk: a meta-analysis of 27 published studies.",
+            "Meta-analysis providing consolidated support for functional interpretation of the OGG1 Ser326Cys variant.",
         ),
     ),
     "MGMT": _activity_score_meta(
@@ -656,7 +716,7 @@ def build_full_panel() -> KnowledgeGraph:
     return KnowledgeGraph(nodes=t1.nodes + t2.nodes, edges=[])
 
 
-def get_activity_scores(gene: str) -> list[dict] | None:
+def get_activity_scores(gene: str) -> list[dict[str, Any]] | None:
     """Look up activity score entries for a gene. Returns None if not found."""
     return ACTIVITY_SCORES.get(gene)
 
@@ -666,7 +726,7 @@ def get_activity_score_metadata(gene: str) -> dict[str, object] | None:
     return ACTIVITY_SCORE_METADATA.get(gene)
 
 
-def get_activity_score_references(gene: str) -> list[dict] | None:
+def get_activity_score_references(gene: str) -> list[dict[str, Any]] | None:
     """Return supporting references for a gene's activity score table."""
     metadata = get_activity_score_metadata(gene)
     if metadata is None:
