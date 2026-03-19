@@ -3,6 +3,8 @@
 import json
 
 import pytest
+from pydantic import ValidationError
+
 from ExposoGraph.engine import GraphEngine
 from ExposoGraph.models import Edge, EdgeType, KnowledgeGraph, Node, NodeType
 
@@ -70,16 +72,12 @@ class TestLoadAndMerge:
         assert engine.edge_count == 1
         assert warnings == []
 
-    def test_load_skips_bad_edges(self, engine):
-        kg = KnowledgeGraph(
-            nodes=[Node(id="A", label="A", type=NodeType.ENZYME)],
-            edges=[Edge(source="A", target="MISSING", type=EdgeType.ACTIVATES)],
-        )
-        warnings = engine.load(kg)
-        assert engine.node_count == 1
-        assert engine.edge_count == 0
-        assert len(warnings) == 1
-        assert "MISSING" in warnings[0]
+    def test_load_rejects_bad_edges(self, engine):
+        with pytest.raises(ValidationError, match="MISSING"):
+            KnowledgeGraph(
+                nodes=[Node(id="A", label="A", type=NodeType.ENZYME)],
+                edges=[Edge(source="A", target="MISSING", type=EdgeType.ACTIVATES)],
+            )
 
     def test_merge_additive(self, engine, sample_kg):
         engine.load(sample_kg)

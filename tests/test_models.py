@@ -1,6 +1,8 @@
 """Tests for ExposoGraph.models."""
 
 import pytest
+from pydantic import ValidationError
+
 from ExposoGraph.models import (
     CurationConfidence,
     CurationRecord,
@@ -22,7 +24,33 @@ class TestNode:
 
     def test_auto_id_from_label(self):
         node = Node(id="", label="Benzo a pyrene", type=NodeType.CARCINOGEN)
-        assert node.id == "Benzo_a_pyrene"
+        assert node.id.startswith("Benzo_a_pyrene_")
+        assert len(node.id) == len("Benzo_a_pyrene_") + 6  # 6-char hash suffix
+
+    def test_auto_id_simple_label_no_hash(self):
+        node = Node(id="", label="CYP1A1", type=NodeType.ENZYME)
+        assert node.id == "CYP1A1"
+
+    def test_auto_id_special_chars_get_hash(self):
+        n1 = Node(id="", label="Benzo[a]pyrene", type=NodeType.CARCINOGEN)
+        n2 = Node(id="", label="Benzo(a)pyrene", type=NodeType.CARCINOGEN)
+        # Both sanitize to Benzo_a_pyrene but get different hash suffixes
+        assert n1.id != n2.id
+        assert n1.id.startswith("Benzo_a_pyrene_")
+        assert n2.id.startswith("Benzo_a_pyrene_")
+
+    def test_auto_id_stable_for_same_label(self):
+        n1 = Node(id="", label="BaP-7,8-diol", type=NodeType.METABOLITE)
+        n2 = Node(id="", label="BaP-7,8-diol", type=NodeType.METABOLITE)
+        assert n1.id == n2.id
+
+    def test_explicit_id_preserved(self):
+        node = Node(id="custom_id", label="Benzo[a]pyrene", type=NodeType.CARCINOGEN)
+        assert node.id == "custom_id"
+
+    def test_generate_id_classmethod(self):
+        assert Node.generate_id("CYP1A1") == "CYP1A1"
+        assert Node.generate_id("Benzo[a]pyrene").startswith("Benzo_a_pyrene_")
 
     def test_optional_fields_default_none(self):
         node = Node(id="BaP", label="BaP", type=NodeType.CARCINOGEN)
@@ -90,6 +118,15 @@ class TestNode:
         assert node.curation.status == CurationStatus.REVIEWED
         assert node.curation.confidence == CurationConfidence.HIGH
 
+    def test_curation_reviewed_at_accepts_valid_dates(self):
+        for date_str in ("2026-03-19", "2026-03-19T14:30:00"):
+            record = CurationRecord(reviewed_at=date_str)
+            assert record.reviewed_at == date_str
+
+    def test_curation_reviewed_at_rejects_invalid_format(self):
+        with pytest.raises(ValidationError, match="reviewed_at"):
+            CurationRecord(reviewed_at="March 19, 2026")
+
 
 class TestEdge:
     def test_basic_creation(self):
@@ -136,6 +173,30 @@ class TestKnowledgeGraph:
         assert len(kg.nodes) == 2
         assert len(kg.edges) == 1
         assert kg.nodes[0].type == NodeType.CARCINOGEN
+
+    def test_rejects_edge_with_missing_source(self):
+        with pytest.raises(ValidationError, match="missing source node"):
+            KnowledgeGraph(
+                nodes=[Node(id="A", label="A", type=NodeType.ENZYME)],
+                edges=[Edge(source="MISSING", target="A", type=EdgeType.ACTIVATES)],
+            )
+
+    def test_rejects_edge_with_missing_target(self):
+        with pytest.raises(ValidationError, match="missing target node"):
+            KnowledgeGraph(
+                nodes=[Node(id="A", label="A", type=NodeType.ENZYME)],
+                edges=[Edge(source="A", target="MISSING", type=EdgeType.ACTIVATES)],
+            )
+
+    def test_rejects_edge_with_missing_carcinogen(self):
+        with pytest.raises(ValidationError, match="missing carcinogen node"):
+            KnowledgeGraph(
+                nodes=[
+                    Node(id="A", label="A", type=NodeType.ENZYME),
+                    Node(id="B", label="B", type=NodeType.METABOLITE),
+                ],
+                edges=[Edge(source="A", target="B", type=EdgeType.ACTIVATES, carcinogen="MISSING")],
+            )
 
     def test_roundtrip_json(self):
         kg = KnowledgeGraph(
