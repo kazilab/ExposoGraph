@@ -9,10 +9,12 @@ from __future__ import annotations
 import logging
 from typing import Optional
 
+from .config import GraphMode
+from .grounding import prepare_knowledge_graph
 from .db_clients.ctd import CTDClient, ChemicalGeneInteraction
 from .db_clients.iarc import IARCClassifier
 from .db_clients.kegg import KEGGClient
-from .models import Edge, EdgeType, KnowledgeGraph, Node, NodeType, ProvenanceRecord
+from .models import Edge, EdgeType, KnowledgeGraph, Node, NodeType, ProvenanceRecord, RecordOrigin
 
 logger = logging.getLogger(__name__)
 
@@ -21,6 +23,7 @@ def seed_from_kegg_pathway(
     pathway_id: str,
     *,
     client: Optional[KEGGClient] = None,
+    mode: GraphMode | str = GraphMode.EXPLORATORY,
 ) -> KnowledgeGraph:
     """Build a KnowledgeGraph from a KEGG pathway.
 
@@ -67,7 +70,16 @@ def seed_from_kegg_pathway(
             )
         )
 
-    return KnowledgeGraph(nodes=nodes, edges=edges)
+    raw_graph = KnowledgeGraph(
+        nodes=[node.model_copy(update={"origin": RecordOrigin.SEEDED}) for node in nodes],
+        edges=[edge.model_copy(update={"origin": RecordOrigin.SEEDED}) for edge in edges],
+    )
+    prepared_graph, _warnings = prepare_knowledge_graph(
+        raw_graph,
+        mode=mode,
+        reference_graphs=[("kegg", raw_graph)],
+    )
+    return prepared_graph
 
 
 def seed_from_ctd(
@@ -75,6 +87,7 @@ def seed_from_ctd(
     *,
     client: Optional[CTDClient] = None,
     organism: str = "Homo sapiens",
+    mode: GraphMode | str = GraphMode.EXPLORATORY,
 ) -> KnowledgeGraph:
     """Build a KnowledgeGraph from CTD chemical-gene interactions.
 
@@ -143,7 +156,16 @@ def seed_from_ctd(
             )
         )
 
-    return KnowledgeGraph(nodes=nodes, edges=edges)
+    raw_graph = KnowledgeGraph(
+        nodes=[node.model_copy(update={"origin": RecordOrigin.SEEDED}) for node in nodes],
+        edges=[edge.model_copy(update={"origin": RecordOrigin.SEEDED}) for edge in edges],
+    )
+    prepared_graph, _warnings = prepare_knowledge_graph(
+        raw_graph,
+        mode=mode,
+        reference_graphs=[("ctd", raw_graph)],
+    )
+    return prepared_graph
 
 
 def _infer_edge_type(ixn: ChemicalGeneInteraction) -> EdgeType:

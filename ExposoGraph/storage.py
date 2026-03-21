@@ -4,12 +4,15 @@ from __future__ import annotations
 
 import json
 import sqlite3
+from contextlib import suppress
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 
+from .config import GraphVisibility, normalize_graph_visibility
 from .engine import GraphEngine
 from .exporter import to_interactive_html_string
+from .graph_filters import filter_knowledge_graph
 from .models import KnowledgeGraph
 
 
@@ -27,6 +30,7 @@ class GraphRevisionSummary:
     node_count: int
     edge_count: int
     note: str | None = None
+    visibility: GraphVisibility = GraphVisibility.ALL
 
 
 @dataclass(frozen=True)
@@ -44,7 +48,7 @@ class GraphRepository:
     def __init__(self, db_path: str | Path) -> None:
         self.db_path = Path(db_path)
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
-        self._conn = self._create_connection()
+        self._conn: sqlite3.Connection | None = self._create_connection()
         self._initialize()
 
     def _create_connection(self) -> sqlite3.Connection:
@@ -56,6 +60,9 @@ class GraphRepository:
     @property
     def connection(self) -> sqlite3.Connection:
         """Return the persistent connection, reconnecting if closed."""
+        if self._conn is None:
+            self._conn = self._create_connection()
+            return self._conn
         try:
             self._conn.execute("SELECT 1")
         except (sqlite3.ProgrammingError, sqlite3.OperationalError):
@@ -64,7 +71,21 @@ class GraphRepository:
 
     def close(self) -> None:
         """Close the persistent connection."""
-        self._conn.close()
+        conn, self._conn = self._conn, None
+        if conn is None:
+            return
+        with suppress(sqlite3.ProgrammingError):
+            conn.close()
+
+    def __enter__(self) -> GraphRepository:
+        return self
+
+    def __exit__(self, exc_type, exc, tb) -> None:
+        self.close()
+
+    def __del__(self) -> None:
+        with suppress(Exception):
+            self.close()
 
     def _initialize(self) -> None:
         with self.connection as conn:
@@ -81,6 +102,7 @@ class GraphRepository:
                     revision_id INTEGER PRIMARY KEY AUTOINCREMENT,
                     graph_key TEXT NOT NULL,
                     graph_name TEXT NOT NULL,
+                    visibility TEXT NOT NULL DEFAULT 'all',
                     revision_number INTEGER NOT NULL,
                     created_at TEXT NOT NULL,
                     note TEXT,
@@ -96,6 +118,15 @@ class GraphRepository:
                 ON graph_revisions(graph_key, revision_number DESC);
                 """
             )
+            columns = {
+                row["name"]
+                for row in conn.execute("PRAGMA table_info(graph_revisions)").fetchall()
+            }
+            if "visibility" not in columns:
+                conn.execute(
+                    "ALTER TABLE graph_revisions "
+                    "ADD COLUMN visibility TEXT NOT NULL DEFAULT 'all'"
+                )
 
     @staticmethod
     def _summary_from_row(row: sqlite3.Row) -> GraphRevisionSummary:
@@ -103,6 +134,7 @@ class GraphRepository:
             revision_id=row["revision_id"],
             graph_key=row["graph_key"],
             graph_name=row["graph_name"],
+            visibility=normalize_graph_visibility(row["visibility"]),
             revision_number=row["revision_number"],
             created_at=row["created_at"],
             node_count=row["node_count"],
@@ -116,6 +148,7 @@ class GraphRepository:
             revision_id=row["revision_id"],
             graph_key=row["graph_key"],
             graph_name=row["graph_name"],
+            visibility=normalize_graph_visibility(row["visibility"]),
             revision_number=row["revision_number"],
             created_at=row["created_at"],
             node_count=row["node_count"],
@@ -132,9 +165,15 @@ class GraphRepository:
         graph_name: str,
         kg: KnowledgeGraph,
         html: str,
+        visibility: GraphVisibility | str = GraphVisibility.ALL,
         note: str | None = None,
     ) -> GraphRevisionSummary:
         timestamp = _utc_now()
+        normalized_visibility = (
+            visibility
+            if isinstance(visibility, GraphVisibility)
+            else normalize_graph_visibility(visibility)
+        )
         graph_json = json.dumps(kg.model_dump(mode="json"), indent=2)
 
         with self.connection as conn:
@@ -159,6 +198,7 @@ class GraphRepository:
                 INSERT INTO graph_revisions(
                     graph_key,
                     graph_name,
+                    visibility,
                     revision_number,
                     created_at,
                     note,
@@ -167,13 +207,14 @@ class GraphRepository:
                     graph_json,
                     html
                 )
-                SELECT ?, ?, COALESCE(MAX(revision_number), 0) + 1, ?, ?, ?, ?, ?, ?
+                SELECT ?, ?, ?, COALESCE(MAX(revision_number), 0) + 1, ?, ?, ?, ?, ?, ?
                 FROM graph_revisions
                 WHERE graph_key = ?
                 """,
                 (
                     graph_key,
                     graph_name,
+                    normalized_visibility.value,
                     timestamp,
                     note,
                     len(kg.nodes),
@@ -198,15 +239,26 @@ class GraphRepository:
         graph_name: str,
         engine: GraphEngine,
         template_path: str | Path | None = None,
+        visibility: GraphVisibility | str = GraphVisibility.ALL,
         note: str | None = None,
     ) -> GraphRevisionSummary:
-        kg = engine.to_knowledge_graph()
-        html = to_interactive_html_string(engine, template_path=template_path)
+        normalized_visibility = (
+            visibility
+            if isinstance(visibility, GraphVisibility)
+            else normalize_graph_visibility(visibility)
+        )
+        kg = filter_knowledge_graph(engine.to_knowledge_graph(), normalized_visibility)
+        html = to_interactive_html_string(
+            engine,
+            template_path=template_path,
+            visibility=normalized_visibility,
+        )
         return self.save_graph(
             graph_key=graph_key,
             graph_name=graph_name,
             kg=kg,
             html=html,
+            visibility=normalized_visibility,
             note=note,
         )
 

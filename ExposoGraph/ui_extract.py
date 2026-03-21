@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import streamlit as st
 
-from .config import LLMProvider
+from .config import GraphMode, LLMProvider
 from .engine import GraphEngine
 from .llm_backend import OllamaBackend, OpenAIBackend
 from .llm_extractor import EXAMPLE_INPUT, extract_graph_with_usage
@@ -21,13 +21,25 @@ def render(engine: GraphEngine) -> None:
         "Describe a carcinogen metabolism pathway in plain English. "
         "The LLM will extract nodes and edges automatically."
     )
+    pending_warnings = st.session_state.pop("extract_merge_warnings", [])
+    if pending_warnings:
+        st.warning("\n".join(pending_warnings))
 
-    provider = st.selectbox(
-        "LLM Provider",
-        [p.value for p in LLMProvider],
-        index=0,
-        help="Choose OpenAI (cloud) or Ollama (local).",
-    )
+    col_mode1, col_mode2 = st.columns(2)
+    with col_mode1:
+        provider = st.selectbox(
+            "LLM Provider",
+            [p.value for p in LLMProvider],
+            index=0,
+            help="Choose OpenAI (cloud) or Ollama (local).",
+        )
+    with col_mode2:
+        graph_mode = st.selectbox(
+            "Graph Mode",
+            [mode.value for mode in GraphMode],
+            index=0,
+            help="Exploratory keeps provisional entities. Strict keeps only canonically grounded content.",
+        )
 
     if provider == LLMProvider.OPENAI:
         col_cfg1, col_cfg2 = st.columns(2)
@@ -83,7 +95,7 @@ def render(engine: GraphEngine) -> None:
         with st.spinner("Calling LLM…"):
             try:
                 kg, usage = extract_graph_with_usage(
-                    user_text, model=model, backend=backend,
+                    user_text, model=model, backend=backend, mode=graph_mode,
                 )
                 st.success(
                     f"Extracted **{len(kg.nodes)}** nodes and "
@@ -91,6 +103,7 @@ def render(engine: GraphEngine) -> None:
                     f"({usage.total_tokens} tokens, {usage.duration_ms}ms)"
                 )
                 st.session_state.pending_extraction = kg.model_dump(mode="json")
+                st.session_state.pending_extraction_mode = graph_mode
                 st.rerun()
 
             except Exception as exc:
@@ -98,19 +111,25 @@ def render(engine: GraphEngine) -> None:
 
     pending_kg = get_pending_extraction()
     if pending_kg is not None:
+        pending_mode = st.session_state.get("pending_extraction_mode", GraphMode.EXPLORATORY.value)
         with st.expander("Preview extracted data", expanded=True):
+            st.caption(f"Prepared in `{pending_mode}` mode")
             st.json(pending_kg.model_dump(mode="json"))
 
         col_merge, col_discard = st.columns(2)
         with col_merge:
             if st.button("Merge into graph", type="primary", use_container_width=True):
                 try:
-                    engine.merge(pending_kg)
+                    warnings = engine.merge(pending_kg, mode=pending_mode)
+                    if warnings:
+                        st.session_state.extract_merge_warnings = warnings
                     st.session_state.pop("pending_extraction", None)
+                    st.session_state.pop("pending_extraction_mode", None)
                     st.rerun()
                 except Exception as exc:
                     st.error(f"Merge failed: {exc}")
         with col_discard:
             if st.button("Discard extraction", use_container_width=True):
                 st.session_state.pop("pending_extraction", None)
+                st.session_state.pop("pending_extraction_mode", None)
                 st.rerun()

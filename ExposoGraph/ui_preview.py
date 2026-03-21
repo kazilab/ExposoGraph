@@ -5,7 +5,9 @@ from __future__ import annotations
 import streamlit as st
 from streamlit_agraph import Config, Edge as AEdge, Node as ANode, agraph
 
+from .config import GraphVisibility
 from .engine import GraphEngine
+from .graph_filters import filter_knowledge_graph, graph_visibility_label
 from ._app_shared import (
     EDGE_COLORS,
     EDGE_SEARCH_FIELDS,
@@ -25,10 +27,25 @@ def render(engine: GraphEngine) -> None:
         st.info("No data yet — use LLM Extract or Manual Entry to add nodes.")
         return
 
-    all_nodes = list(engine.G.nodes(data=True))
-    all_edges = list(engine.G.edges(keys=True, data=True))
+    visibility = st.session_state.get("graph_visibility", GraphVisibility.ALL.value)
+    visible_graph = filter_knowledge_graph(engine.to_knowledge_graph(), visibility)
+    all_nodes = [
+        (node.id, node.model_dump(exclude_none=True, mode="json"))
+        for node in visible_graph.nodes
+    ]
+    all_edges = [
+        (
+            edge.source,
+            edge.target,
+            f"{edge.source}-{edge.type.value}-{edge.target}",
+            edge.model_dump(exclude_none=True, mode="json"),
+        )
+        for edge in visible_graph.edges
+    ]
     node_type_options = sorted({data.get("type", "?") for _, data in all_nodes})
     edge_type_options = sorted({data.get("type", "?") for _, _, _, data in all_edges})
+
+    st.caption(f"Visibility: {graph_visibility_label(visibility)}")
 
     col_f1, col_f2, col_f3 = st.columns(3)
     with col_f1:

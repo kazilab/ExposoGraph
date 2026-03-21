@@ -5,9 +5,15 @@ from __future__ import annotations
 import streamlit as st
 
 from .branding import APP_NAME, APP_TAGLINE, APP_VERSION, CONTACT_EMAIL, COPYRIGHT_HOLDER, DEVELOPED_BY
-from .config import AppMode
+from .config import AppMode, GraphVisibility
 from .engine import GraphEngine
-from .exporter import parse_graph_artifact, to_interactive_html, to_interactive_html_string
+from .exporter import (
+    parse_graph_artifact,
+    to_interactive_html,
+    to_interactive_html_string,
+    to_plotly_html_string,
+)
+from .graph_filters import filtered_engine, graph_visibility_label
 from .reference_data import (
     ACTIVITY_SCORES,
     build_full_panel,
@@ -20,18 +26,15 @@ from .reference_data import (
 from .storage import GraphRepository
 from ._app_shared import (
     APP_MODE,
-    DEPLOY_VIEWER_DIR,
     PERSISTENCE_ENABLED,
     PROJECTS_DIR,
     REPOSITORY_PATH,
-    existing_viewer_data_path,
     load_into_engine,
     parse_uploaded_graph,
     relative_path,
     revision_label,
     saved_project_paths,
     slugify_project_name,
-    viewer_template_dir,
 )
 
 
@@ -45,6 +48,19 @@ def render(engine: GraphEngine, repository: GraphRepository | None) -> None:
         st.caption(
             f"**{engine.node_count}** nodes · **{engine.edge_count}** edges"
         )
+        active_visibility = st.selectbox(
+            "Graph visibility",
+            options=[visibility.value for visibility in GraphVisibility],
+            key="graph_visibility",
+            format_func=graph_visibility_label,
+            help="Controls Preview, Raw Data, and Export views without changing the stored graph.",
+        )
+        visible_engine = filtered_engine(engine, active_visibility)
+        if active_visibility != GraphVisibility.ALL.value:
+            st.caption(
+                f"Current view: **{visible_engine.node_count}** nodes · "
+                f"**{visible_engine.edge_count}** edges"
+            )
         if APP_MODE == AppMode.STATELESS:
             st.info(
                 "Mode: stateless. User graphs are not saved on the server. "
@@ -81,42 +97,23 @@ def _render_import(engine: GraphEngine) -> None:
         value=engine.node_count == 0,
         help="When enabled, imported data clears the current graph first.",
     )
-    viewer_data_path = existing_viewer_data_path()
-    if viewer_data_path is not None:
-        st.caption(f"Viewer data source: `{relative_path(viewer_data_path)}`")
-    else:
-        st.caption("Viewer data source: none found yet")
-
-    col_a, col_b = st.columns(2)
-    with col_a:
-        if st.button("Load current viewer data", use_container_width=True):
-            if viewer_data_path is not None:
-                kg = parse_graph_artifact(viewer_data_path)
-                warnings = load_into_engine(engine, kg, replace=replace_import)
-                message = f"Loaded {len(kg.nodes)} nodes, {len(kg.edges)} edges"
-                if warnings:
-                    message += f" with {len(warnings)} warning(s)"
-                st.success(message)
-                st.rerun()
-            else:
-                st.error("graph-data.js not found")
-    with col_b:
-        uploaded = st.file_uploader(
-            "Upload graph",
-            type=["json", "html", "js"],
-            label_visibility="collapsed",
-        )
-        if uploaded is not None:
-            try:
-                kg = parse_uploaded_graph(uploaded.name, uploaded.read().decode("utf-8"))
-                warnings = load_into_engine(engine, kg, replace=replace_import)
-                message = f"Loaded {len(kg.nodes)} nodes, {len(kg.edges)} edges"
-                if warnings:
-                    message += f" with {len(warnings)} warning(s)"
-                st.success(message)
-                st.rerun()
-            except Exception as exc:
-                st.error(f"Upload failed: {exc}")
+    st.caption("Upload a saved JSON, HTML, or graph-data.js export. There is no canonical viewer file in the repo.")
+    uploaded = st.file_uploader(
+        "Upload graph",
+        type=["json", "html", "js"],
+        label_visibility="collapsed",
+    )
+    if uploaded is not None:
+        try:
+            kg = parse_uploaded_graph(uploaded.name, uploaded.read().decode("utf-8"))
+            warnings = load_into_engine(engine, kg, replace=replace_import)
+            message = f"Loaded {len(kg.nodes)} nodes, {len(kg.edges)} edges"
+            if warnings:
+                message += f" with {len(warnings)} warning(s)"
+            st.success(message)
+            st.rerun()
+        except Exception as exc:
+            st.error(f"Upload failed: {exc}")
 
 
 def _render_project_name() -> None:
@@ -138,22 +135,28 @@ def _render_revision_history(engine: GraphEngine, repository: GraphRepository) -
 
     st.markdown("##### Revision History")
     replace_import = st.session_state.get("Replace current graph on import", engine.node_count == 0)
+    visibility = st.session_state.get("graph_visibility", GraphVisibility.ALL.value)
+    visible_engine = filtered_engine(engine, visibility)
+    st.caption(f"Save scope: {graph_visibility_label(visibility)}")
 
     col_r1, col_r2 = st.columns(2)
     with col_r1:
         if st.button("Save revision", use_container_width=True):
-            if engine.node_count == 0:
-                st.error("Graph is empty")
+            if visible_engine.node_count == 0:
+                st.error("Current revision view is empty")
             else:
                 try:
                     saved = repository.save_engine(
                         graph_key=slugify_project_name(st.session_state.project_name),
                         graph_name=st.session_state.project_name.strip() or "knowledge_graph",
                         engine=engine,
-                        template_path=viewer_template_dir(),
+                        visibility=visibility,
                         note=st.session_state.revision_note.strip() or None,
                     )
-                    st.success(f"Saved revision r{saved.revision_number} to `{REPOSITORY_PATH.name}`")
+                    st.success(
+                        f"Saved revision r{saved.revision_number} "
+                        f"({graph_visibility_label(saved.visibility)}) to `{REPOSITORY_PATH.name}`"
+                    )
                     st.session_state.revision_note = ""
                     st.rerun()
                 except Exception as exc:
@@ -245,14 +248,21 @@ def _render_revision_history(engine: GraphEngine, repository: GraphRepository) -
 
 def _render_html_snapshots(engine: GraphEngine) -> None:
     st.markdown("##### HTML Files")
+    visibility = st.session_state.get("graph_visibility", GraphVisibility.ALL.value)
+    visible_engine = filtered_engine(engine, visibility)
+    st.caption(f"Snapshot scope: {graph_visibility_label(visibility)}")
     col_s1, col_s2 = st.columns(2)
     with col_s1:
         if st.button("Save HTML snapshot", use_container_width=True):
-            if engine.node_count == 0:
-                st.error("Graph is empty")
+            if visible_engine.node_count == 0:
+                st.error("Current snapshot view is empty")
             else:
                 project_path = PROJECTS_DIR / f"{slugify_project_name(st.session_state.project_name)}.html"
-                to_interactive_html(engine, project_path, template_path=viewer_template_dir())
+                to_interactive_html(
+                    engine,
+                    project_path,
+                    visibility=visibility,
+                )
                 st.success(f"Saved `{project_path.name}`")
     with col_s2:
         saved_projects = saved_project_paths()
@@ -286,13 +296,13 @@ def _render_gene_panels(engine: GraphEngine) -> None:
             st.success(f"Loaded {len(kg.nodes)} Tier 1 genes")
             st.rerun()
     with col_p2:
-        if st.button("Tier 2 (15)", use_container_width=True, help="Extended Phase II/III and DNA-repair panel"):
+        if st.button("Tier 2 (23)", use_container_width=True, help="Extended hormone, transport, and DNA-repair panel"):
             kg = build_tier2_panel()
             engine.merge(kg)
             st.success(f"Loaded {len(kg.nodes)} Tier 2 genes")
             st.rerun()
     with col_p3:
-        if st.button("All (28)", use_container_width=True, help="Full Tier 1 + Tier 2 panel"):
+        if st.button("All (36)", use_container_width=True, help="Full Tier 1 + Tier 2 panel"):
             kg = build_full_panel()
             engine.merge(kg)
             st.success(f"Loaded {len(kg.nodes)} genes")
@@ -328,53 +338,56 @@ def _render_activity_scores() -> None:
 
 def _render_export(engine: GraphEngine) -> None:
     st.markdown("##### Export")
+    visibility = st.session_state.get("graph_visibility", GraphVisibility.ALL.value)
+    export_engine = filtered_engine(engine, visibility)
     html_export = ""
     html_export_error = ""
-    if engine.node_count > 0:
+    plotly_html_export = ""
+    plotly_html_error = ""
+    if export_engine.node_count > 0:
         try:
-            html_export = to_interactive_html_string(engine, template_path=viewer_template_dir())
+            html_export = to_interactive_html_string(export_engine)
         except Exception as exc:
             html_export_error = str(exc)
-    col_e1, col_e2 = st.columns(2)
-    with col_e1:
-        if PERSISTENCE_ENABLED:
-            if st.button("Export HTML locally", use_container_width=True):
-                if engine.node_count == 0:
-                    st.error("Graph is empty")
-                elif html_export_error:
-                    st.error(f"Export failed: {html_export_error}")
-                else:
-                    out = to_interactive_html(
-                        engine,
-                        DEPLOY_VIEWER_DIR / "index.html",
-                        template_path=viewer_template_dir(),
-                    )
-                    st.success(f"Written to `{relative_path(out)}`")
-        else:
-            st.caption("Server-side file export disabled in stateless mode.")
-    with col_e2:
-        if engine.node_count > 0 and not html_export_error:
-            st.download_button(
-                "Download HTML",
-                data=html_export,
-                file_name=f"{slugify_project_name(st.session_state.project_name)}.html",
-                mime="text/html",
-                use_container_width=True,
-            )
-        elif html_export_error:
-            st.caption(f"HTML export unavailable: {html_export_error}")
-    template_dir = viewer_template_dir()
-    if template_dir is not None:
-        if PERSISTENCE_ENABLED:
-            st.caption(
-                "Local export and download both produce a standalone interactive HTML "
-                f"file using the `{relative_path(template_dir)}` viewer template."
-            )
-        else:
-            st.caption(
-                "Downloads produce a standalone interactive HTML file using the "
-                f"`{relative_path(template_dir)}` viewer template."
-            )
+        try:
+            plotly_html_export = to_plotly_html_string(export_engine)
+        except Exception as exc:
+            plotly_html_error = str(exc)
+    st.caption(
+        "Export scope: "
+        f"{graph_visibility_label(visibility)} "
+        f"({export_engine.node_count} nodes, {export_engine.edge_count} edges)"
+    )
+    if PERSISTENCE_ENABLED:
+        st.caption("Use HTML Files below to save a named local snapshot.")
+    else:
+        st.caption("Server-side file export disabled in stateless mode.")
+    if export_engine.node_count > 0:
+        col_e1, col_e2 = st.columns(2)
+        if not html_export_error:
+            with col_e1:
+                st.download_button(
+                    "Download App HTML",
+                    data=html_export,
+                    file_name=f"{slugify_project_name(st.session_state.project_name)}.html",
+                    mime="text/html",
+                    use_container_width=True,
+                    help="Parseable ExposoGraph HTML export for reload/revisions.",
+                )
+        if not plotly_html_error:
+            with col_e2:
+                st.download_button(
+                    "Download Plotly HTML",
+                    data=plotly_html_export,
+                    file_name=f"{slugify_project_name(st.session_state.project_name)}_plotly.html",
+                    mime="text/html",
+                    use_container_width=True,
+                    help="Standalone Plotly viewer optimized for interactive exploration.",
+                )
+    if html_export_error:
+        st.caption(f"HTML export unavailable: {html_export_error}")
+    if plotly_html_error:
+        st.caption(f"Plotly HTML export unavailable: {plotly_html_error}")
 
 
 def _render_validation(engine: GraphEngine) -> None:

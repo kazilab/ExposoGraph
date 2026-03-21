@@ -11,8 +11,10 @@ import logging
 import os
 from typing import Optional
 
+from .config import GraphMode
+from .grounding import prepare_knowledge_graph
 from .llm_backend import LLMBackend, OpenAIBackend, UsageRecord
-from .models import KnowledgeGraph
+from .models import KnowledgeGraph, RecordOrigin
 
 logger = logging.getLogger(__name__)
 
@@ -109,6 +111,7 @@ def extract_graph(
     api_key: Optional[str] = None,
     base_url: Optional[str] = None,
     backend: Optional[LLMBackend] = None,
+    mode: GraphMode | str = GraphMode.EXPLORATORY,
 ) -> KnowledgeGraph:
     """Send *text* to the LLM and return a validated KnowledgeGraph.
 
@@ -116,7 +119,7 @@ def extract_graph(
     :class:`OpenAIBackend` is created from the given credentials.
     """
     result, _usage = extract_graph_with_usage(
-        text, model=model, api_key=api_key, base_url=base_url, backend=backend,
+        text, model=model, api_key=api_key, base_url=base_url, backend=backend, mode=mode,
     )
     return result
 
@@ -128,6 +131,7 @@ def extract_graph_with_usage(
     api_key: Optional[str] = None,
     base_url: Optional[str] = None,
     backend: Optional[LLMBackend] = None,
+    mode: GraphMode | str = GraphMode.EXPLORATORY,
 ) -> tuple[KnowledgeGraph, UsageRecord]:
     """Like :func:`extract_graph` but also returns token usage metadata."""
     if backend is None:
@@ -135,7 +139,20 @@ def extract_graph_with_usage(
 
     raw, usage = backend.extract_json(text, SYSTEM_PROMPT, model)
     kg = KnowledgeGraph(**raw)
-    return kg, usage
+    kg = KnowledgeGraph(
+        nodes=[
+            node.model_copy(update={"origin": RecordOrigin.LLM})
+            for node in kg.nodes
+        ],
+        edges=[
+            edge.model_copy(update={"origin": RecordOrigin.LLM})
+            for edge in kg.edges
+        ],
+    )
+    prepared_graph, warnings = prepare_knowledge_graph(kg, mode=mode)
+    for warning in warnings:
+        logger.warning(warning)
+    return prepared_graph, usage
 
 
 EXAMPLE_INPUT = """\

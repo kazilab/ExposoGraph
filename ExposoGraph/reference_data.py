@@ -11,16 +11,21 @@ NCBI_GENE_IDS: dict[str, str] = {
     "ABCB1": "5243",
     "ABCC2": "1244",
     "ABCG2": "9429",
+    "AKR1C3": "8644",
+    "COMT": "1312",
     "CYP1A1": "1543",
     "CYP1A2": "1544",
     "CYP1B1": "1545",
     "CYP2A6": "1548",
     "CYP2A13": "1553",
+    "CYP17A1": "1586",
     "CYP2C19": "1557",
     "CYP2C9": "1559",
     "CYP2D6": "1565",
     "CYP2E1": "1571",
+    "CYP19A1": "1588",
     "CYP3A4": "1576",
+    "CYP3A5": "1577",
     "EPHX1": "2052",
     "ERCC2": "2068",
     "GSTM1": "2944",
@@ -31,8 +36,12 @@ NCBI_GENE_IDS: dict[str, str] = {
     "NAT2": "10",
     "NQO1": "1728",
     "OGG1": "4968",
+    "SRD5A1": "6715",
+    "SRD5A2": "6716",
     "SULT1A1": "6817",
+    "SULT1E1": "6783",
     "UGT1A1": "54658",
+    "UGT2B17": "7367",
     "UGT2B7": "7364",
     "XPC": "7508",
     "XRCC1": "7515",
@@ -43,16 +52,21 @@ CLINPGX_ACCESSIONS: dict[str, str] = {
     "ABCB1": "PA267",
     "ABCC2": "PA116",
     "ABCG2": "PA390",
+    "AKR1C3": "AKR1C3",
+    "COMT": "PA119",
     "CYP1A1": "PA27092",
     "CYP1A2": "PA27093",
     "CYP1B1": "PA27094",
     "CYP2A6": "PA121",
     "CYP2A13": "PA27101",
+    "CYP17A1": "CYP17A1",
     "CYP2C9": "PA126",
     "CYP2C19": "PA124",
     "CYP2D6": "PA128",
     "CYP2E1": "PA129",
+    "CYP19A1": "CYP19A1",
     "CYP3A4": "PA130",
+    "CYP3A5": "CYP3A5",
     "EPHX1": "PA27829",
     "ERCC2": "PA27848",
     "GSTM1": "PA182",
@@ -63,8 +77,12 @@ CLINPGX_ACCESSIONS: dict[str, str] = {
     "NAT2": "PA18",
     "NQO1": "PA31744",
     "OGG1": "PA31912",
+    "SRD5A1": "SRD5A1",
+    "SRD5A2": "SRD5A2",
     "SULT1A1": "PA343",
+    "SULT1E1": "SULT1E1",
     "UGT1A1": "PA420",
+    "UGT2B17": "UGT2B17",
     "UGT2B7": "PA361",
     "XPC": "PA37413",
     "XRCC1": "PA369",
@@ -119,6 +137,16 @@ def _pharmvar_ref(symbol: str) -> dict[str, str]:
         "citation": f"PharmVar allele definition resource for {symbol}",
         "url": f"https://www.pharmvar.org/gene/{symbol}",
         "evidence": "Star-allele nomenclature and haplotype definition resource.",
+    }
+
+
+def _cpic_ref(record_id: str, citation: str) -> dict[str, str]:
+    return {
+        "source_db": "CPIC",
+        "record_id": record_id,
+        "citation": citation,
+        "url": "https://cpicpgx.org/guidelines/",
+        "evidence": "Guideline-backed genotype-to-phenotype translation and activity score conventions.",
     }
 
 
@@ -184,6 +212,85 @@ def _activity_score_meta(
         "note": note,
         "references": list(references),
     }
+
+
+REFERENCE_KEGG_PATHWAYS: list[dict[str, str]] = [
+    {
+        "pathway_id": "hsa00980",
+        "label": "Xenobiotic metabolism by cytochrome P450",
+        "focus": "Core xenobiotic biotransformation pathway for phase I carcinogen metabolism.",
+    },
+    {
+        "pathway_id": "hsa00140",
+        "label": "Steroid hormone biosynthesis",
+        "focus": "Hormone-metabolism context relevant to estrogenic carcinogen processing.",
+    },
+    {
+        "pathway_id": "hsa05204",
+        "label": "Chemical carcinogenesis - DNA adducts",
+        "focus": "Reactive-metabolite to DNA-adduct formation and repair context.",
+    },
+    {
+        "pathway_id": "hsa05208",
+        "label": "Chemical carcinogenesis - reactive oxygen species",
+        "focus": "ROS-linked carcinogenesis and oxidative damage context.",
+    },
+]
+
+
+CURATION_SOURCE_MANIFEST: dict[str, dict[str, dict[str, object]]] = {
+    "primary_sources": {
+        "IARC": {
+            "role": "Carcinogen hazard classification",
+            "implementation": "Bundled static lookup used to annotate carcinogen nodes and grounding indexes.",
+            "notes": (
+                "Current implementation stores a curated subset of common carcinogens rather than a "
+                "full monograph ETL."
+            ),
+        },
+        "KEGG": {
+            "role": "Reference pathway and pathway-membership context",
+            "implementation": "KEGG REST seeding plus a curated reference pathway catalog.",
+            "reference_pathways": [pathway["pathway_id"] for pathway in REFERENCE_KEGG_PATHWAYS],
+        },
+        "PharmVar": {
+            "role": "Star-allele nomenclature and haplotype definitions for supported pharmacogenes",
+            "implementation": "Referenced in activity-score metadata where allele-definition resources are used.",
+        },
+        "CPIC": {
+            "role": "Genotype-to-phenotype translation conventions for guideline-backed activity tables",
+            "implementation": (
+                "Explicitly referenced for guideline-backed activity metadata such as CYP2D6, CYP2C9, "
+                "CYP2C19, and UGT1A1."
+            ),
+        },
+        "CTD": {
+            "role": "Chemical-gene interactions and DNA-repair toxicogenomic context",
+            "implementation": "Seeder client plus repair-gene provenance records.",
+        },
+        "GTEx": {
+            "role": "Human tissue-expression context for seeded genes",
+            "implementation": "Structured gene-level provenance for all seeded panel genes.",
+        },
+        "PubMed": {
+            "role": "Primary literature support for functional activity annotations",
+            "implementation": "Per-gene activity metadata references with PMID-backed citations.",
+        },
+    },
+    "supporting_sources": {
+        "NCBI Gene": {
+            "role": "Stable human gene identifiers and canonical nomenclature",
+            "implementation": "Base provenance anchor for all seeded genes.",
+        },
+        "ClinPGx": {
+            "role": "Pharmacogene coverage and implementation-facing gene resources",
+            "implementation": (
+                "Structured provenance for non-repair seed genes and activity metadata for "
+                "supported pharmacogenes."
+            ),
+        },
+    },
+}
 
 # ── Tier 1: Core Carcinogen-Metabolizing Enzyme Panel (13 genes) ─────────
 
@@ -281,7 +388,7 @@ TIER1_GENES: list[dict[str, Any]] = [
     ),
 ]
 
-# ── Tier 2: Extended Gene Panel (15 genes) ───────────────────────────────
+# ── Tier 2: Extended Gene Panel (23 genes) ───────────────────────────────
 
 TIER2_GENES: list[dict[str, Any]] = [
     # Phase II
@@ -305,6 +412,27 @@ TIER2_GENES: list[dict[str, Any]] = [
         role="Detoxification",
         detail="Glucuronidation of steroid hormones, carcinogen metabolites",
         tissue="liver, kidney, GI tract, mammary",
+    ),
+    _gene_entry(
+        "UGT2B17",
+        phase="II",
+        role="Detoxification",
+        detail="Glucuronidation of testosterone, DHT, and related androgen metabolites",
+        tissue="liver, prostate, intestine",
+    ),
+    _gene_entry(
+        "SULT1E1",
+        phase="II",
+        role="Detoxification",
+        detail="High-affinity estrogen sulfotransferase; sulfation and inactivation of estradiol and catechol estrogens",
+        tissue="liver, endometrium, breast, placenta",
+    ),
+    _gene_entry(
+        "COMT",
+        phase="II",
+        role="Detoxification",
+        detail="O-methylation of catechol estrogens and other catechols; limits redox-cycling estrogen metabolites",
+        tissue="liver, breast, brain, endometrium",
     ),
     # Phase III transporters
     _gene_entry(
@@ -365,7 +493,7 @@ TIER2_GENES: list[dict[str, Any]] = [
         detail="Direct reversal of O6-alkylguanine; single-use suicidal repair enzyme",
         tissue="liver, colon, lung, brain",
     ),
-    # Additional CYPs (PGx overlap)
+    # Additional CYPs and hormone-metabolism enzymes
     _gene_entry(
         "CYP2C9",
         phase="I",
@@ -393,6 +521,41 @@ TIER2_GENES: list[dict[str, Any]] = [
         role="Activation",
         detail="Primary lung NNK-metabolizing CYP; tobacco-smoke carcinogen activation",
         tissue="lung, nasal mucosa",
+    ),
+    _gene_entry(
+        "CYP17A1",
+        phase="I",
+        role="Activation",
+        detail="Steroid 17alpha-hydroxylase/17,20-lyase; androgen precursor synthesis in hormone-linked carcinogen context",
+        tissue="adrenal, gonad, prostate",
+    ),
+    _gene_entry(
+        "SRD5A1",
+        phase="I",
+        role="Activation",
+        detail="5alpha-reductase type 1; converts testosterone to DHT in peripheral hormone-metabolism tissues",
+        tissue="skin, liver, prostate, breast",
+    ),
+    _gene_entry(
+        "SRD5A2",
+        phase="I",
+        role="Activation",
+        detail="5alpha-reductase type 2; major DHT-forming enzyme in prostate and urogenital tissues",
+        tissue="prostate, seminal vesicle, genital skin, liver",
+    ),
+    _gene_entry(
+        "CYP19A1",
+        phase="I",
+        role="Activation",
+        detail="Aromatase; converts androgen precursors to estrogens in breast and other hormone-responsive tissues",
+        tissue="adipose, ovary, breast, placenta, brain",
+    ),
+    _gene_entry(
+        "AKR1C3",
+        phase="I",
+        role="Mixed",
+        detail="17-ketosteroid reductase and quinone reductase; local androgen/estrogen activation with redox-metabolism overlap",
+        tissue="prostate, breast, liver, endometrium",
     ),
 ]
 
@@ -498,9 +661,13 @@ ACTIVITY_SCORES: dict[str, list[dict[str, Any]]] = {
 ACTIVITY_SCORE_METADATA: dict[str, dict[str, object]] = {
     "CYP2D6": _activity_score_meta(
         "Guideline-backed pharmacogene",
-        "Allele-function and activity-score conventions are aligned to pharmacogene interpretation resources.",
+        "PharmVar-backed allele definitions are paired with CPIC phenotype-translation and activity-score conventions.",
         _clinpgx_ref("CYP2D6"),
         _pharmvar_ref("CYP2D6"),
+        _cpic_ref(
+            "CYP2D6-CYP2C19-TCA-2016",
+            "Clinical Pharmacogenetics Implementation Consortium Guideline (CPIC) for CYP2D6 and CYP2C19 Genotypes and Dosing of Tricyclic Antidepressants: 2016 Update.",
+        ),
         _pubmed_ref(
             "31562822",
             "Clinical Pharmacogenetics Implementation Consortium Guideline (CPIC) for CYP2D6 and CYP2C19 Genotypes and Dosing of Tricyclic Antidepressants: 2016 Update.",
@@ -509,9 +676,13 @@ ACTIVITY_SCORE_METADATA: dict[str, dict[str, object]] = {
     ),
     "CYP2C9": _activity_score_meta(
         "Guideline-backed pharmacogene",
-        "Core pharmacogene with star-allele interpretation anchored to ClinPGx/PharmVar resources.",
+        "Core pharmacogene with PharmVar-backed allele definitions and CPIC activity-score translation.",
         _clinpgx_ref("CYP2C9"),
         _pharmvar_ref("CYP2C9"),
+        _cpic_ref(
+            "CYP2C9-WARFARIN-2017",
+            "Clinical Pharmacogenetics Implementation Consortium (CPIC) Guideline for Pharmacogenetics-Guided Warfarin Dosing: 2017 Update.",
+        ),
         _pubmed_ref(
             "28198005",
             "Clinical Pharmacogenetics Implementation Consortium (CPIC) Guideline for Pharmacogenetics-Guided Warfarin Dosing: 2017 Update.",
@@ -520,9 +691,13 @@ ACTIVITY_SCORE_METADATA: dict[str, dict[str, object]] = {
     ),
     "CYP2C19": _activity_score_meta(
         "Guideline-backed pharmacogene",
-        "Core pharmacogene with star-allele interpretation anchored to ClinPGx/PharmVar resources.",
+        "Core pharmacogene with PharmVar-backed allele definitions and CPIC metabolizer-phenotype translation.",
         _clinpgx_ref("CYP2C19"),
         _pharmvar_ref("CYP2C19"),
+        _cpic_ref(
+            "CYP2C19-PPI",
+            "Clinical Pharmacogenetics Implementation Consortium (CPIC) Guideline for CYP2C19 and Proton Pump Inhibitor Dosing.",
+        ),
         _pubmed_ref(
             "29385237",
             "Clinical Pharmacogenetics Implementation Consortium (CPIC) Guideline for CYP2C19 and Proton Pump Inhibitor Dosing.",
@@ -542,9 +717,13 @@ ACTIVITY_SCORE_METADATA: dict[str, dict[str, object]] = {
     ),
     "UGT1A1": _activity_score_meta(
         "Guideline-backed pharmacogene",
-        "UGT1A1 star-allele activity groupings are used as pharmacogene-style interpretation aids.",
+        "UGT1A1 activity groupings are anchored to implementation-facing gene resources with explicit CPIC phenotype translation.",
         _clinpgx_ref("UGT1A1"),
         _ncbi_gene_ref("UGT1A1"),
+        _cpic_ref(
+            "UGT1A1-ATAZANAVIR",
+            "Clinical Pharmacogenetics Implementation Consortium (CPIC) Guidelines for UGT1A1 and Atazanavir Prescribing.",
+        ),
         _pubmed_ref(
             "24296998",
             "Clinical Pharmacogenetics Implementation Consortium (CPIC) Guidelines for UGT1A1 and Atazanavir Prescribing.",
@@ -699,7 +878,7 @@ def build_tier1_panel() -> KnowledgeGraph:
 
 
 def build_tier2_panel() -> KnowledgeGraph:
-    """Return a KnowledgeGraph containing all 15 Tier 2 genes as Enzyme nodes."""
+    """Return a KnowledgeGraph containing all 23 Tier 2 genes as Enzyme nodes."""
     nodes = [
         Node(id=g["id"], label=g["label"], type=NodeType.ENZYME, tier=2, **{
             k: v for k, v in g.items() if k not in ("id", "label")
@@ -710,7 +889,7 @@ def build_tier2_panel() -> KnowledgeGraph:
 
 
 def build_full_panel() -> KnowledgeGraph:
-    """Return a KnowledgeGraph with all Tier 1 + Tier 2 genes (28 total)."""
+    """Return a KnowledgeGraph with all Tier 1 + Tier 2 genes (36 total)."""
     t1 = build_tier1_panel()
     t2 = build_tier2_panel()
     return KnowledgeGraph(nodes=t1.nodes + t2.nodes, edges=[])

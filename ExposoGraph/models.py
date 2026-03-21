@@ -33,6 +33,7 @@ class EdgeType(str, Enum):
     INDUCES = "INDUCES"
     INHIBITS = "INHIBITS"
     ENCODES = "ENCODES"
+    CUSTOM = "CUSTOM"
 
 
 class CurationStatus(str, Enum):
@@ -47,6 +48,21 @@ class CurationConfidence(str, Enum):
     LOW = "Low"
     MEDIUM = "Medium"
     HIGH = "High"
+
+
+class RecordOrigin(str, Enum):
+    IMPORTED = "imported"
+    SEEDED = "seeded"
+    USER = "user"
+    LLM = "llm"
+
+
+class MatchStatus(str, Enum):
+    UNKNOWN = "unknown"
+    CANONICAL = "canonical"
+    ALIAS = "alias"
+    UNMATCHED = "unmatched"
+    CUSTOM = "custom"
 
 
 class ProvenanceRecord(BaseModel):
@@ -154,6 +170,12 @@ class Node(BaseModel):
     phenotype: Optional[str] = None
     activity_score: Optional[float] = None
     tier: Optional[int] = None
+    origin: RecordOrigin = RecordOrigin.IMPORTED
+    match_status: MatchStatus = MatchStatus.UNKNOWN
+    canonical_id: Optional[str] = None
+    canonical_label: Optional[str] = None
+    canonical_namespace: Optional[str] = None
+    custom_type: Optional[str] = None
     provenance: list[ProvenanceRecord] = Field(default_factory=list)
     curation: Optional[CurationRecord] = None
 
@@ -180,6 +202,16 @@ class Node(BaseModel):
         if not self.id:
             self.id = self.generate_id(self.label)
         _normalize_provenance_fields(self, summary_only_fields=("evidence",))
+        if self.match_status == MatchStatus.CANONICAL:
+            self.canonical_id = self.canonical_id or self.id
+            self.canonical_label = self.canonical_label or self.label
+        elif self.match_status == MatchStatus.ALIAS:
+            if not self.canonical_id:
+                raise ValueError("Alias-matched nodes must define canonical_id")
+            if not self.canonical_label:
+                raise ValueError("Alias-matched nodes must define canonical_label")
+        elif self.match_status == MatchStatus.CUSTOM and not self.custom_type:
+            raise ValueError("Custom nodes must define custom_type")
         return self
 
 
@@ -195,12 +227,28 @@ class Edge(BaseModel):
     evidence: Optional[str] = None
     pmid: Optional[str] = None
     tissue: Optional[str] = None
+    origin: RecordOrigin = RecordOrigin.IMPORTED
+    match_status: MatchStatus = MatchStatus.UNKNOWN
+    canonical_predicate: Optional[str] = None
+    canonical_namespace: Optional[str] = None
+    custom_predicate: Optional[str] = None
     provenance: list[ProvenanceRecord] = Field(default_factory=list)
     curation: Optional[CurationRecord] = None
 
     @model_validator(mode="after")
     def _normalize(self) -> "Edge":
         _normalize_provenance_fields(self, summary_only_fields=("evidence",))
+        if self.type == EdgeType.CUSTOM and not self.custom_predicate:
+            raise ValueError("Edges with type CUSTOM must define custom_predicate")
+        if self.type == EdgeType.CUSTOM and self.match_status in (
+            MatchStatus.CANONICAL,
+            MatchStatus.ALIAS,
+        ):
+            raise ValueError("Edges with type CUSTOM cannot be canonical or alias-matched")
+        if self.match_status in (MatchStatus.CANONICAL, MatchStatus.ALIAS):
+            self.canonical_predicate = self.canonical_predicate or self.type.value
+        elif self.match_status == MatchStatus.CUSTOM and not self.custom_predicate:
+            raise ValueError("Custom edges must define custom_predicate")
         return self
 
 

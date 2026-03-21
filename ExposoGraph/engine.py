@@ -8,6 +8,8 @@ from typing import Any
 
 import networkx as nx
 
+from .config import GraphMode
+from .grounding import prepare_knowledge_graph
 from .models import Edge, KnowledgeGraph, Node
 
 logger = logging.getLogger(__name__)
@@ -51,24 +53,45 @@ class GraphEngine:
 
     # ── Bulk operations ──────────────────────────────────────────────────
 
-    def load(self, kg: KnowledgeGraph) -> list[str]:
+    def _validated_reference_graph(self) -> KnowledgeGraph | None:
+        if self.node_count == 0:
+            return None
+        current_graph = self.to_knowledge_graph()
+        validated_graph, _warnings = prepare_knowledge_graph(
+            current_graph,
+            mode=GraphMode.STRICT,
+        )
+        if not validated_graph.nodes:
+            return None
+        return validated_graph
+
+    def load(self, kg: KnowledgeGraph, *, mode: GraphMode | str = GraphMode.EXPLORATORY) -> list[str]:
         """Replace the current graph with *kg*.
 
         Clears all existing nodes and edges before loading.
         Returns a list of warning messages for any skipped edges.
         """
         self.clear()
-        return self.merge(kg)
+        return self.merge(kg, mode=mode)
 
-    def merge(self, kg: KnowledgeGraph) -> list[str]:
+    def merge(self, kg: KnowledgeGraph, *, mode: GraphMode | str = GraphMode.EXPLORATORY) -> list[str]:
         """Additive merge — new nodes/edges are added, existing ones updated.
 
         Returns a list of warning messages for any skipped edges.
         """
-        warnings: list[str] = []
-        for node in kg.nodes:
+        reference_graphs: list[tuple[str, KnowledgeGraph]] = []
+        validated_graph = self._validated_reference_graph()
+        if validated_graph is not None:
+            reference_graphs.append(("current_graph", validated_graph))
+
+        prepared_graph, warnings = prepare_knowledge_graph(
+            kg,
+            mode=mode,
+            reference_graphs=reference_graphs or None,
+        )
+        for node in prepared_graph.nodes:
             self.add_node(node)
-        for edge in kg.edges:
+        for edge in prepared_graph.edges:
             try:
                 self.add_edge(edge)
             except ValueError as exc:

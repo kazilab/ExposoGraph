@@ -14,6 +14,8 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Any, Protocol
 
+from pydantic import BaseModel, ConfigDict, Field
+
 logger = logging.getLogger(__name__)
 
 # ── Usage tracking ────────────────────────────────────────────────────────
@@ -30,6 +32,51 @@ class UsageRecord:
     total_tokens: int = 0
     timestamp: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
     duration_ms: int = 0
+
+
+class _ExtractionNode(BaseModel):
+    """Lightweight schema for raw LLM extraction output."""
+
+    model_config = ConfigDict(extra="ignore")
+
+    id: str
+    label: str
+    type: str
+    detail: str = ""
+    group: str | None = None
+    iarc: str | None = None
+    phase: str | None = None
+    role: str | None = None
+    reactivity: str | None = None
+    source_db: str | None = None
+    evidence: str | None = None
+    pmid: str | None = None
+    tissue: str | None = None
+    variant: str | None = None
+    phenotype: str | None = None
+    activity_score: float | None = None
+    tier: int | None = None
+
+
+class _ExtractionEdge(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+
+    source: str
+    target: str
+    type: str
+    label: str | None = None
+    carcinogen: str | None = None
+    source_db: str | None = None
+    evidence: str | None = None
+    pmid: str | None = None
+    tissue: str | None = None
+
+
+class _ExtractionKnowledgeGraph(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+
+    nodes: list[_ExtractionNode] = Field(default_factory=list)
+    edges: list[_ExtractionEdge] = Field(default_factory=list)
 
 
 # ── Backend protocol ──────────────────────────────────────────────────────
@@ -123,15 +170,12 @@ class OpenAIBackend:
 
         start = time.monotonic()
 
-        # Try structured output first
-        from .models import KnowledgeGraph
-
         try:
             def _parse() -> Any:
                 return self.client.beta.chat.completions.parse(
                     model=model,
                     messages=messages,  # type: ignore[arg-type]
-                    response_format=KnowledgeGraph,
+                    response_format=_ExtractionKnowledgeGraph,
                 )
 
             response = _retry(_parse, max_retries=self.max_retries, retryable=retryable)

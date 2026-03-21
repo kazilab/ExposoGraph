@@ -47,12 +47,16 @@ _IARC_CLASSIFICATIONS: dict[str, dict[str, str]] = {
     "Dibenz[a,h]anthracene": {"group": "Group 2A", "cas": "53-70-3", "category": "PAH", "monograph": "Vol. 92 (2010)"},
     "N-Nitrosodiethylamine": {"group": "Group 2A", "cas": "55-18-5", "category": "Nitrosamine", "monograph": "Suppl. 7 (1987)"},
     "NDEA": {"group": "Group 2A", "cas": "55-18-5", "category": "Nitrosamine", "monograph": "Suppl. 7 (1987)"},
+    "N-Nitrosodimethylamine": {"group": "Group 2A", "cas": "62-75-9", "category": "Nitrosamine", "monograph": "Vol. 17 (1978); Suppl. 7 (1987)"},
+    "NDMA": {"group": "Group 2A", "cas": "62-75-9", "category": "Nitrosamine", "monograph": "Vol. 17 (1978); Suppl. 7 (1987)"},
     "Styrene": {"group": "Group 2A", "cas": "100-42-5", "category": "Solvent", "monograph": "Vol. 121 (2019)"},
     # Group 2B — Possibly carcinogenic
     "Chrysene": {"group": "Group 2B", "cas": "218-01-9", "category": "PAH", "monograph": "Vol. 92 (2010)"},
     "Benzo[b]fluoranthene": {"group": "Group 2B", "cas": "205-99-2", "category": "PAH", "monograph": "Vol. 92 (2010)"},
     "Naphthalene": {"group": "Group 2B", "cas": "91-20-3", "category": "PAH", "monograph": "Vol. 82 (2002)"},
     "Styrene-7,8-oxide": {"group": "Group 2B", "cas": "96-09-3", "category": "Epoxide", "monograph": "Vol. 121 (2019)"},
+    "4-(Methylnitrosamino)-1-(3-pyridyl)-1-butanone": {"group": "Group 1", "cas": "64091-91-4", "category": "Nitrosamine", "monograph": "Vol. 89 (2007); Vol. 100E (2012)"},
+    "NNK": {"group": "Group 1", "cas": "64091-91-4", "category": "Nitrosamine", "monograph": "Vol. 89 (2007); Vol. 100E (2012)"},
     "PhIP": {"group": "Group 2B", "cas": "105650-23-5", "category": "HCA", "monograph": "Vol. 56 (1993)"},
     "MeIQx": {"group": "Group 2B", "cas": "77500-04-0", "category": "HCA", "monograph": "Vol. 56 (1993)"},
     # Group 3 — Not classifiable
@@ -76,10 +80,26 @@ class IARCClassifier:
         self._data = dict(_IARC_CLASSIFICATIONS)
         if extra:
             self._data.update(extra)
+        self._normalized_index = {
+            self._normalize_name(name): name
+            for name in self._data
+        }
+
+    @staticmethod
+    def _normalize_name(chemical_name: str) -> str:
+        return "".join(ch.lower() for ch in chemical_name if ch.isalnum())
+
+    def _resolve_name(self, chemical_name: str) -> Optional[str]:
+        if chemical_name in self._data:
+            return chemical_name
+        return self._normalized_index.get(self._normalize_name(chemical_name))
 
     def classify(self, chemical_name: str) -> Optional[IARCGroup]:
         """Return the IARC group for a chemical, or ``None`` if not found."""
-        entry = self._data.get(chemical_name)
+        resolved_name = self._resolve_name(chemical_name)
+        if resolved_name is None:
+            return None
+        entry = self._data.get(resolved_name)
         if entry is None:
             return None
         group_str = entry["group"]
@@ -90,7 +110,10 @@ class IARCClassifier:
 
     def get_entry(self, chemical_name: str) -> Optional[dict[str, str]]:
         """Return the full classification entry (group, CAS, category)."""
-        return self._data.get(chemical_name)
+        resolved_name = self._resolve_name(chemical_name)
+        if resolved_name is None:
+            return None
+        return self._data.get(resolved_name)
 
     def list_by_group(self, group: IARCGroup) -> list[str]:
         """Return all chemical names in a given IARC group."""

@@ -17,7 +17,7 @@ if str(PROJECT_ROOT) not in sys.path:
 
 from .branding import APP_NAME, APP_TAGLINE, APP_VERSION, CONTACT_EMAIL, COPYRIGHT_HOLDER, DEVELOPED_BY
 from ._app_shared import get_engine, get_repository
-from . import ui_sidebar, ui_extract, ui_manual, ui_preview, ui_data
+from . import ui_sidebar, ui_extract, ui_manual, ui_preview, ui_d3_viewer, ui_data
 
 # ── Page config ──────────────────────────────────────────────────────────
 
@@ -59,8 +59,8 @@ st.markdown(f"## {APP_NAME}")
 st.caption(f"{APP_TAGLINE} · Version {APP_VERSION}")
 st.caption(f"{DEVELOPED_BY} · {CONTACT_EMAIL} · Copyright {COPYRIGHT_HOLDER}")
 
-tab_extract, tab_manual, tab_preview, tab_data = st.tabs(
-    ["LLM Extract", "Manual Entry", "Graph Preview", "Raw Data"]
+tab_extract, tab_manual, tab_preview, tab_d3_viewer, tab_data = st.tabs(
+    ["LLM Extract", "Manual Entry", "Graph Preview", "D3 HTML Viewer", "Raw Data"]
 )
 
 with tab_extract:
@@ -71,6 +71,9 @@ with tab_manual:
 
 with tab_preview:
     ui_preview.render(engine)
+
+with tab_d3_viewer:
+    ui_d3_viewer.render(engine)
 
 with tab_data:
     ui_data.render(engine)

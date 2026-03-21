@@ -17,6 +17,17 @@ class LLMProvider(str, Enum):
     OLLAMA = "ollama"
 
 
+class GraphMode(str, Enum):
+    EXPLORATORY = "exploratory"
+    STRICT = "strict"
+
+
+class GraphVisibility(str, Enum):
+    ALL = "all"
+    VALIDATED_ONLY = "validated_only"
+    EXPLORATORY_ONLY = "exploratory_only"
+
+
 def normalize_app_mode(value: str | None) -> AppMode:
     """Normalize environment/config values into a supported app mode."""
     if value is None:
@@ -32,6 +43,43 @@ def normalize_app_mode(value: str | None) -> AppMode:
         "persistent": AppMode.LOCAL,
     }
     return aliases.get(cleaned, AppMode.STATELESS)
+
+
+def normalize_graph_mode(value: str | None) -> GraphMode:
+    """Normalize graph-validation mode values."""
+    if value is None:
+        return GraphMode.EXPLORATORY
+
+    cleaned = value.strip().lower()
+    aliases = {
+        "exploratory": GraphMode.EXPLORATORY,
+        "draft": GraphMode.EXPLORATORY,
+        "flexible": GraphMode.EXPLORATORY,
+        "strict": GraphMode.STRICT,
+        "validated": GraphMode.STRICT,
+        "canonical": GraphMode.STRICT,
+    }
+    return aliases.get(cleaned, GraphMode.EXPLORATORY)
+
+
+def normalize_graph_visibility(value: str | None) -> GraphVisibility:
+    """Normalize graph-view visibility mode values."""
+    if value is None:
+        return GraphVisibility.ALL
+
+    cleaned = value.strip().lower()
+    aliases = {
+        "all": GraphVisibility.ALL,
+        "full": GraphVisibility.ALL,
+        "validated": GraphVisibility.VALIDATED_ONLY,
+        "validated_only": GraphVisibility.VALIDATED_ONLY,
+        "canonical": GraphVisibility.VALIDATED_ONLY,
+        "strict": GraphVisibility.VALIDATED_ONLY,
+        "exploratory": GraphVisibility.EXPLORATORY_ONLY,
+        "exploratory_only": GraphVisibility.EXPLORATORY_ONLY,
+        "provisional": GraphVisibility.EXPLORATORY_ONLY,
+    }
+    return aliases.get(cleaned, GraphVisibility.ALL)
 
 
 def get_app_mode(env: Mapping[str, str] | None = None) -> AppMode:

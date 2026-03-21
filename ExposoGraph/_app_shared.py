@@ -11,9 +11,10 @@ from typing import Any
 import streamlit as st
 
 from .branding import APP_NAME, APP_TAGLINE, APP_VERSION, CONTACT_EMAIL, COPYRIGHT_HOLDER, DEVELOPED_BY
-from .config import AppMode, get_app_mode, persistence_enabled
+from .config import AppMode, GraphVisibility, get_app_mode, persistence_enabled
 from .engine import GraphEngine
-from .exporter import parse_graph_artifact, parse_graph_data_text, to_interactive_html_string
+from .exporter import parse_graph_data_text
+from .graph_filters import graph_visibility_label
 from .llm_extractor import EXAMPLE_INPUT
 from .models import (
     CurationConfidence,
@@ -27,8 +28,6 @@ from .storage import GraphRepository, GraphRevisionSummary
 # ── Path constants ────────────────────────────────────────────────────────
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
-REFERENCE_VIEWER_DIR = PROJECT_ROOT / "references" / "knowledge-graph"
-DEPLOY_VIEWER_DIR = PROJECT_ROOT / "knowledge-graph"
 DATA_DIR = PROJECT_ROOT / "data"
 REPOSITORY_PATH = DATA_DIR / "ExposoGraph.sqlite3"
 PROJECTS_DIR = PROJECT_ROOT / "saved_graphs"
@@ -139,24 +138,6 @@ def matches_query(data: dict[str, Any], query: str, fields: tuple[str, ...]) -> 
     return query.lower() in haystack.lower()
 
 
-def existing_viewer_data_path() -> Path | None:
-    for candidate in (
-        DEPLOY_VIEWER_DIR / "index.html",
-        DEPLOY_VIEWER_DIR / "graph-data.js",
-        REFERENCE_VIEWER_DIR / "graph-data.js",
-    ):
-        if candidate.exists():
-            return candidate
-    return None
-
-
-def viewer_template_dir() -> Path | None:
-    for candidate in (REFERENCE_VIEWER_DIR, DEPLOY_VIEWER_DIR):
-        if (candidate / "index.html").exists():
-            return candidate
-    return None
-
-
 def relative_path(path: Path) -> str:
     try:
         return str(path.relative_to(PROJECT_ROOT))
@@ -185,9 +166,14 @@ def saved_project_paths() -> list[Path]:
 def revision_label(revision_id: int, revisions_by_id: dict[int, GraphRevisionSummary]) -> str:
     revision = revisions_by_id[revision_id]
     note = f" - {revision.note}" if revision.note else ""
+    visibility = (
+        f" | {graph_visibility_label(revision.visibility)}"
+        if revision.visibility != GraphVisibility.ALL
+        else ""
+    )
     return (
         f"r{revision.revision_number} | {revision.node_count}n/{revision.edge_count}e | "
-        f"{revision.created_at[:19]}{note}"
+        f"{revision.created_at[:19]}{visibility}{note}"
     )
 
 
