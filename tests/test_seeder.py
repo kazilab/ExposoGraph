@@ -4,10 +4,11 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+from ExposoGraph.config import GraphMode
 from ExposoGraph.db_clients.ctd import CTDClient, ChemicalGeneInteraction
 from ExposoGraph.db_clients.iarc import IARCClassifier
 from ExposoGraph.db_clients.kegg import KEGGClient, KEGGPathway
-from ExposoGraph.models import EdgeType, KnowledgeGraph, NodeType
+from ExposoGraph.models import EdgeType, KnowledgeGraph, MatchStatus, NodeType, RecordOrigin
 from ExposoGraph.seeder import (
     _infer_edge_type,
     seed_from_ctd,
@@ -74,6 +75,22 @@ class TestSeedFromKEGG:
         kg = seed_from_kegg_pathway("hsa00000", client=mock_client)
         assert len(kg.nodes) == 1  # just the pathway node
         assert len(kg.edges) == 0
+
+    def test_strict_mode_keeps_seeded_pathway_graph(self):
+        mock_client = MagicMock(spec=KEGGClient)
+        mock_client.get_pathway.return_value = KEGGPathway(
+            pathway_id="hsa05204",
+            name="Chemical Carcinogenesis",
+            genes=["CYP1A1"],
+        )
+
+        kg = seed_from_kegg_pathway("hsa05204", client=mock_client, mode=GraphMode.STRICT)
+
+        assert len(kg.nodes) == 2
+        assert len(kg.edges) == 1
+        assert all(node.origin == RecordOrigin.SEEDED for node in kg.nodes)
+        assert all(node.match_status in (MatchStatus.CANONICAL, MatchStatus.ALIAS) for node in kg.nodes)
+        assert kg.edges[0].match_status == MatchStatus.CANONICAL
 
 
 # ── CTD seeder ────────────────────────────────────────────────────────────
@@ -153,6 +170,26 @@ class TestSeedFromCTD:
 
         assert len(kg.nodes) == 1  # just the carcinogen
         assert len(kg.edges) == 0
+
+    def test_strict_mode_keeps_seeded_ctd_graph(self):
+        mock_client = MagicMock(spec=CTDClient)
+        mock_client.get_chemical_gene_interactions.return_value = [
+            ChemicalGeneInteraction(
+                chemical_name="Novel Chemical",
+                chemical_id="D999999",
+                gene_symbol="NOVEL1",
+                gene_id="9999",
+                interaction="metabolism",
+            ),
+        ]
+
+        kg = seed_from_ctd("Novel Chemical", client=mock_client, mode=GraphMode.STRICT)
+
+        assert len(kg.nodes) == 2
+        assert len(kg.edges) == 1
+        assert all(node.origin == RecordOrigin.SEEDED for node in kg.nodes)
+        assert all(node.match_status == MatchStatus.CANONICAL for node in kg.nodes)
+        assert kg.edges[0].match_status == MatchStatus.CANONICAL
 
 
 # ── Edge type inference ───────────────────────────────────────────────────

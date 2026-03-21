@@ -6,8 +6,9 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+from ExposoGraph.config import GraphMode
 from ExposoGraph.llm_extractor import SYSTEM_PROMPT, extract_graph
-from ExposoGraph.models import KnowledgeGraph
+from ExposoGraph.models import KnowledgeGraph, MatchStatus, RecordOrigin
 
 # ── Fixtures ─────────────────────────────────────────────────────────────
 
@@ -24,6 +25,14 @@ SAMPLE_KG_DICT = {
 }
 
 _USAGE = SimpleNamespace(prompt_tokens=10, completion_tokens=5, total_tokens=15)
+
+
+class _StubBackend:
+    def __init__(self, payload: dict):
+        self.payload = payload
+
+    def extract_json(self, text: str, system_prompt: str, model: str):
+        return self.payload, _USAGE
 
 
 def _make_structured_response(kg, usage=_USAGE):
@@ -211,3 +220,48 @@ class TestModelValidation:
 
         with pytest.raises(Exception, match="MISSING"):
             extract_graph("text", api_key="sk-test")
+
+
+class TestModeAwareExtraction:
+    def test_exploratory_mode_marks_llm_origin_and_grounds_nodes(self):
+        payload = {
+            "nodes": [
+                {"id": "n1", "label": "CYP1A1", "type": "Enzyme"},
+                {"id": "n2", "label": "BaP", "type": "Carcinogen"},
+            ],
+            "edges": [
+                {"source": "n1", "target": "n2", "type": "ACTIVATES"},
+            ],
+        }
+
+        result = extract_graph(
+            "text",
+            backend=_StubBackend(payload),
+            mode=GraphMode.EXPLORATORY,
+        )
+
+        assert all(node.origin == RecordOrigin.LLM for node in result.nodes)
+        assert all(edge.origin == RecordOrigin.LLM for edge in result.edges)
+        assert result.nodes[0].match_status == MatchStatus.CANONICAL
+        assert result.nodes[1].match_status == MatchStatus.ALIAS
+        assert result.edges[0].match_status == MatchStatus.CANONICAL
+
+    def test_strict_mode_filters_unmatched_llm_content(self):
+        payload = {
+            "nodes": [
+                {"id": "n1", "label": "CYP1A1", "type": "Enzyme"},
+                {"id": "n2", "label": "Unknown Chemical", "type": "Carcinogen"},
+            ],
+            "edges": [
+                {"source": "n1", "target": "n2", "type": "ACTIVATES"},
+            ],
+        }
+
+        result = extract_graph(
+            "text",
+            backend=_StubBackend(payload),
+            mode=GraphMode.STRICT,
+        )
+
+        assert [node.id for node in result.nodes] == ["n1"]
+        assert result.edges == []

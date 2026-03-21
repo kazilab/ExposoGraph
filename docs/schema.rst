@@ -3,6 +3,8 @@ Schema Reference
 
 ExposoGraph uses a typed schema for all nodes and edges in the knowledge graph.
 Types are defined as Python enums and enforced by Pydantic models.
+The core ontology remains fixed, while matching/provenance metadata captures
+whether a record is canonical, alias-matched, unmatched, or custom.
 
 Node Types
 ----------
@@ -76,6 +78,9 @@ Edge Types
    * - ``ENCODES``
      - Gene encodes an enzyme
      - Gene → Enzyme
+   * - ``CUSTOM``
+     - User-defined exploratory predicate
+     - Any validated or provisional node pair
 
 Annotation Fields
 -----------------
@@ -113,6 +118,20 @@ Legacy top-level fields such as ``source_db`` and ``pmid`` remain supported.
 When present, they are normalized into a single provenance record for backward
 compatibility.
 
+Grounding and Match Metadata
+----------------------------
+
+Nodes and edges also support a lightweight grounding layer:
+
+- ``origin`` — where the record came from: ``imported``, ``seeded``, ``user``, or ``llm``
+- ``match_status`` — grounding state: ``unknown``, ``canonical``, ``alias``, ``unmatched``, or ``custom``
+- ``canonical_id`` / ``canonical_label`` / ``canonical_namespace`` — canonical mapping for grounded nodes
+- ``canonical_predicate`` / ``canonical_namespace`` — canonical mapping for grounded edges
+- ``custom_type`` / ``custom_predicate`` — exploratory labels for intentionally user-defined content
+
+This metadata is orthogonal to curation. A node may be canonical but still in
+``Draft`` curation status, or custom but manually reviewed.
+
 Curation Fields
 ---------------
 
@@ -128,10 +147,12 @@ Nodes and edges may include a ``curation`` object with review metadata:
 Validation
 ----------
 
-The :class:`~ExposoGraph.engine.GraphEngine` enforces referential integrity:
+The :class:`~ExposoGraph.engine.GraphEngine` enforces referential integrity and
+mode-aware merge behavior:
 
 - Every edge ``source`` and ``target`` must reference an existing node
 - If ``carcinogen`` is set on an edge, that node must also exist
 - :meth:`~ExposoGraph.engine.GraphEngine.load` and
-  :meth:`~ExposoGraph.engine.GraphEngine.merge` skip invalid edges and
-  return a list of warning strings
+  :meth:`~ExposoGraph.engine.GraphEngine.merge` accept ``mode="exploratory"``
+  or ``mode="strict"``
+- ``strict`` mode drops non-canonical nodes and edges and returns warning strings

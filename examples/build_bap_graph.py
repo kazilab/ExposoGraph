@@ -76,16 +76,10 @@ def main() -> None:
     json_path = to_json(engine, OUTPUT_DIR / "bap_graph_export.json")
     print(f"\nExported JSON → {json_path}")
 
-    # Interactive HTML (requires the D3 viewer template)
-    try:
-        html_path = to_interactive_html(engine, OUTPUT_DIR / "bap_graph.html")
-        print(f"Exported HTML → {html_path}")
-        print("\nDone! Open the HTML file in a browser to explore the graph interactively.")
-    except FileNotFoundError:
-        print(
-            "\nNote: Interactive HTML export skipped — viewer template not found.\n"
-            "Run `ExposoGraph.exporter.ensure_viewer_bundle()` first or use the Streamlit app."
-        )
+    # Interactive HTML
+    html_path = to_interactive_html(engine, OUTPUT_DIR / "bap_graph.html")
+    print(f"Exported HTML → {html_path}")
+    print("\nDone! Open the HTML file in a browser to explore the graph interactively.")
 
     print("\nDone!")
 

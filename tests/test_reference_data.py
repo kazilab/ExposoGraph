@@ -5,6 +5,8 @@ from ExposoGraph.models import NodeType
 from ExposoGraph.reference_data import (
     ACTIVITY_SCORE_METADATA,
     ACTIVITY_SCORES,
+    CURATION_SOURCE_MANIFEST,
+    REFERENCE_KEGG_PATHWAYS,
     TIER1_GENES,
     TIER2_GENES,
     build_full_panel,
@@ -17,11 +19,25 @@ from ExposoGraph.reference_data import (
 
 
 class TestGenePanels:
+    def test_curation_source_manifest_tracks_primary_and_supporting_sources(self):
+        primary_sources = CURATION_SOURCE_MANIFEST["primary_sources"]
+        supporting_sources = CURATION_SOURCE_MANIFEST["supporting_sources"]
+
+        assert set(primary_sources) == {"IARC", "KEGG", "PharmVar", "CPIC", "CTD", "GTEx", "PubMed"}
+        assert set(supporting_sources) == {"NCBI Gene", "ClinPGx"}
+        assert primary_sources["KEGG"]["reference_pathways"] == [
+            entry["pathway_id"] for entry in REFERENCE_KEGG_PATHWAYS
+        ]
+
+    def test_reference_kegg_pathways_cover_manuscript_catalog(self):
+        pathway_ids = {entry["pathway_id"] for entry in REFERENCE_KEGG_PATHWAYS}
+        assert pathway_ids == {"hsa00980", "hsa00140", "hsa05204", "hsa05208"}
+
     def test_tier1_has_13_genes(self):
         assert len(TIER1_GENES) == 13
 
-    def test_tier2_has_15_genes(self):
-        assert len(TIER2_GENES) == 15
+    def test_tier2_has_23_genes(self):
+        assert len(TIER2_GENES) == 23
 
     def test_build_tier1_panel(self):
         kg = build_tier1_panel()
@@ -31,13 +47,13 @@ class TestGenePanels:
 
     def test_build_tier2_panel(self):
         kg = build_tier2_panel()
-        assert len(kg.nodes) == 15
+        assert len(kg.nodes) == 23
         assert all(n.type == NodeType.ENZYME for n in kg.nodes)
         assert all(n.tier == 2 for n in kg.nodes)
 
     def test_build_full_panel(self):
         kg = build_full_panel()
-        assert len(kg.nodes) == 28
+        assert len(kg.nodes) == 36
 
     def test_no_duplicate_ids(self):
         kg = build_full_panel()
@@ -49,7 +65,19 @@ class TestGenePanels:
         kg = build_full_panel()
         warnings = engine.load(kg)
         assert warnings == []
-        assert engine.node_count == 28
+        assert engine.node_count == 36
+
+    def test_extended_panel_matches_manuscript_phase_distribution(self):
+        panel = build_full_panel()
+        phase_i = [node for node in panel.nodes if node.phase == "I"]
+        phase_ii = [node for node in panel.nodes if node.phase == "II"]
+        phase_iii = [node for node in panel.nodes if node.phase == "III"]
+        repair = [node for node in panel.nodes if (node.group or "").startswith("DNA Repair")]
+
+        assert len(phase_i) == 15
+        assert len(phase_ii) == 13
+        assert len(phase_iii) == 3
+        assert len(repair) == 5
 
     def test_all_genes_have_required_fields(self):
         for gene_list in [TIER1_GENES, TIER2_GENES]:
@@ -125,6 +153,16 @@ class TestActivityScores:
         references = get_activity_score_references("CYP2D6")
         assert references is not None
         assert len(references) >= 1
+
+    def test_guideline_backed_activity_scores_have_explicit_cpic_references(self):
+        for gene in ("CYP2D6", "CYP2C9", "CYP2C19", "UGT1A1"):
+            references = get_activity_score_references(gene) or []
+            assert "CPIC" in {ref["source_db"] for ref in references}
+
+    def test_pharmvar_backed_pharmacogenes_keep_explicit_allele_definition_references(self):
+        for gene in ("CYP2D6", "CYP2C9", "CYP2C19", "CYP2A6", "CYP3A4"):
+            references = get_activity_score_references(gene) or []
+            assert "PharmVar" in {ref["source_db"] for ref in references}
 
 
 class TestNewNodeTypes:

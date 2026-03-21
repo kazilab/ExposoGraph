@@ -22,6 +22,14 @@ Enums
    :members:
    :undoc-members:
 
+.. autoclass:: ExposoGraph.models.RecordOrigin
+   :members:
+   :undoc-members:
+
+.. autoclass:: ExposoGraph.models.MatchStatus
+   :members:
+   :undoc-members:
+
 Models
 ------
 

@@ -10,9 +10,11 @@ from ExposoGraph.models import (
     Edge,
     EdgeType,
     KnowledgeGraph,
+    MatchStatus,
     Node,
     NodeType,
     ProvenanceRecord,
+    RecordOrigin,
 )
 
 
@@ -21,6 +23,8 @@ class TestNode:
         node = Node(id="CYP1A1", label="CYP1A1", type=NodeType.ENZYME)
         assert node.id == "CYP1A1"
         assert node.type == NodeType.ENZYME
+        assert node.origin == RecordOrigin.IMPORTED
+        assert node.match_status == MatchStatus.UNKNOWN
 
     def test_auto_id_from_label(self):
         node = Node(id="", label="Benzo a pyrene", type=NodeType.CARCINOGEN)
@@ -127,12 +131,57 @@ class TestNode:
         with pytest.raises(ValidationError, match="reviewed_at"):
             CurationRecord(reviewed_at="March 19, 2026")
 
+    def test_canonical_node_backfills_canonical_fields(self):
+        node = Node(
+            id="CYP1A1",
+            label="CYP1A1",
+            type=NodeType.ENZYME,
+            origin=RecordOrigin.SEEDED,
+            match_status=MatchStatus.CANONICAL,
+        )
+        assert node.canonical_id == "CYP1A1"
+        assert node.canonical_label == "CYP1A1"
+
+    def test_alias_node_requires_canonical_metadata(self):
+        with pytest.raises(ValidationError, match="canonical_id"):
+            Node(
+                id="BaP_alias",
+                label="Benzo(a)pyrene",
+                type=NodeType.CARCINOGEN,
+                match_status=MatchStatus.ALIAS,
+            )
+
+    def test_alias_node_keeps_original_label_and_stores_canonical_mapping(self):
+        node = Node(
+            id="BaP_alias",
+            label="Benzo(a)pyrene",
+            type=NodeType.CARCINOGEN,
+            match_status=MatchStatus.ALIAS,
+            canonical_id="BaP",
+            canonical_label="Benzo[a]pyrene",
+            canonical_namespace="iarc",
+        )
+        assert node.label == "Benzo(a)pyrene"
+        assert node.canonical_id == "BaP"
+        assert node.canonical_label == "Benzo[a]pyrene"
+
+    def test_custom_node_requires_custom_type(self):
+        with pytest.raises(ValidationError, match="custom_type"):
+            Node(
+                id="NovelExposure",
+                label="Novel Exposure",
+                type=NodeType.CARCINOGEN,
+                match_status=MatchStatus.CUSTOM,
+            )
+
 
 class TestEdge:
     def test_basic_creation(self):
         edge = Edge(source="CYP1A1", target="BPDE", type=EdgeType.ACTIVATES)
         assert edge.source == "CYP1A1"
         assert edge.type == EdgeType.ACTIVATES
+        assert edge.origin == RecordOrigin.IMPORTED
+        assert edge.match_status == MatchStatus.UNKNOWN
 
     def test_optional_fields(self):
         edge = Edge(source="A", target="B", type=EdgeType.PATHWAY)
@@ -151,6 +200,29 @@ class TestEdge:
         assert len(edge.provenance) == 1
         assert edge.provenance[0].source_db == "KEGG"
         assert edge.provenance[0].pmid == "12345678"
+
+    def test_canonical_edge_backfills_canonical_predicate(self):
+        edge = Edge(
+            source="CYP1A1",
+            target="BPDE",
+            type=EdgeType.ACTIVATES,
+            match_status=MatchStatus.CANONICAL,
+        )
+        assert edge.canonical_predicate == "ACTIVATES"
+
+    def test_custom_edge_requires_custom_predicate(self):
+        with pytest.raises(ValidationError, match="custom_predicate"):
+            Edge(source="A", target="B", type=EdgeType.CUSTOM)
+
+    def test_custom_edge_cannot_be_alias_matched(self):
+        with pytest.raises(ValidationError, match="canonical or alias-matched"):
+            Edge(
+                source="A",
+                target="B",
+                type=EdgeType.CUSTOM,
+                custom_predicate="MODULATES",
+                match_status=MatchStatus.ALIAS,
+            )
 
 
 class TestKnowledgeGraph:
@@ -205,17 +277,33 @@ class TestKnowledgeGraph:
                     id="X",
                     label="X",
                     type=NodeType.PATHWAY,
+                    origin=RecordOrigin.SEEDED,
+                    match_status=MatchStatus.CANONICAL,
+                    canonical_namespace="kegg",
                     provenance=[ProvenanceRecord(source_db="KEGG", url="https://example.org")],
                     curation=CurationRecord(status=CurationStatus.DRAFT, curator="JK"),
                 )
             ],
-            edges=[],
+            edges=[
+                Edge(
+                    source="X",
+                    target="X",
+                    type=EdgeType.CUSTOM,
+                    origin=RecordOrigin.USER,
+                    match_status=MatchStatus.CUSTOM,
+                    custom_predicate="REFERENCES",
+                )
+            ],
         )
         dumped = kg.model_dump(mode="json")
         restored = KnowledgeGraph(**dumped)
         assert restored.nodes[0].id == "X"
         assert restored.nodes[0].provenance[0].url == "https://example.org"
         assert restored.nodes[0].curation is not None
+        assert restored.nodes[0].origin == RecordOrigin.SEEDED
+        assert restored.nodes[0].match_status == MatchStatus.CANONICAL
+        assert restored.edges[0].custom_predicate == "REFERENCES"
+        assert restored.edges[0].origin == RecordOrigin.USER
 
 
 class TestNodeTypes:
@@ -226,3 +314,11 @@ class TestNodeTypes:
     @pytest.mark.parametrize("et", list(EdgeType))
     def test_all_edge_types_have_string_values(self, et):
         assert isinstance(et.value, str)
+
+    @pytest.mark.parametrize("origin", list(RecordOrigin))
+    def test_all_record_origins_have_string_values(self, origin):
+        assert isinstance(origin.value, str)
+
+    @pytest.mark.parametrize("status", list(MatchStatus))
+    def test_all_match_status_values_are_strings(self, status):
+        assert isinstance(status.value, str)

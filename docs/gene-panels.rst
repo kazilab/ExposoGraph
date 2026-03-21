@@ -4,10 +4,19 @@ Gene Panels & Activity Scores
 ExposoGraph ships with curated reference gene panels and CPIC-standardized
 activity scores from the CarcinoGenomic Platform (Tables 3–6).
 
-Each seed gene now includes structured database provenance. The panel uses
-stable references from NCBI Gene for gene identity, GTEx for tissue context,
-ClinPGx for pharmacogenomics coverage, and CTD for DNA-repair toxicogenomics
-annotations.
+Each seed gene now includes structured database provenance, and the package
+exposes a formal source manifest through
+:data:`~ExposoGraph.reference_data.CURATION_SOURCE_MANIFEST`.
+The manuscript-aligned primary curation sources are IARC, KEGG, PharmVar,
+CPIC, CTD, GTEx, and PubMed. ExposoGraph also uses NCBI Gene and ClinPGx as
+supporting implementation sources for stable identifiers and pharmacogene
+coverage.
+
+The curated KEGG pathway catalog exposed through
+:data:`~ExposoGraph.reference_data.REFERENCE_KEGG_PATHWAYS` currently tracks
+``hsa00980`` (xenobiotic metabolism by cytochrome P450), ``hsa00140``
+(steroid hormone biosynthesis), ``hsa05204`` (chemical carcinogenesis - DNA
+adducts), and ``hsa05208`` (chemical carcinogenesis - reactive oxygen species).
 
 Terminology:
 
@@ -81,7 +90,7 @@ The core carcinogen-metabolizing enzyme panel:
      - Detoxification
      - Two-electron quinone reduction; prevents ROS from redox cycling
 
-Tier 2: Extended Panel (15 genes)
+Tier 2: Extended Panel (23 genes)
 ----------------------------------
 
 Additional Phase I, II, III, and DNA repair genes:
@@ -106,6 +115,18 @@ Additional Phase I, II, III, and DNA repair genes:
      - Phase II
      - Detoxification
      - Glucuronidation of steroid hormones, carcinogen metabolites
+   * - UGT2B17
+     - Phase II
+     - Detoxification
+     - Glucuronidation of testosterone, DHT, and related androgen metabolites
+   * - SULT1E1
+     - Phase II
+     - Detoxification
+     - High-affinity estrogen sulfotransferase; estradiol and catechol-estrogen inactivation
+   * - COMT
+     - Phase II
+     - Detoxification
+     - O-methylation of catechol estrogens; limits redox-cycling estrogen metabolites
    * - ABCB1
      - Phase III
      - Transport
@@ -154,6 +175,26 @@ Additional Phase I, II, III, and DNA repair genes:
      - Phase I
      - Activation
      - Primary lung NNK-metabolizing CYP; tobacco-smoke activation
+   * - CYP17A1
+     - Phase I
+     - Activation
+     - Steroid 17alpha-hydroxylase/17,20-lyase; androgen precursor synthesis
+   * - SRD5A1
+     - Phase I
+     - Activation
+     - 5alpha-reductase type 1; peripheral testosterone-to-DHT conversion
+   * - SRD5A2
+     - Phase I
+     - Activation
+     - 5alpha-reductase type 2; major DHT-forming enzyme in prostate tissues
+   * - CYP19A1
+     - Phase I
+     - Activation
+     - Aromatase; converts androgen precursors to estrogens
+   * - AKR1C3
+     - Phase I
+     - Mixed
+     - Local androgen/estrogen activation with quinone-reductase overlap
 
 Activity Scores
 ---------------
@@ -223,7 +264,7 @@ Usage
        get_activity_score_references,
    )
 
-   # Load all 28 genes into a KnowledgeGraph
+   # Load all 36 genes into a KnowledgeGraph
    kg = build_full_panel()
 
    # Look up scores for a specific gene

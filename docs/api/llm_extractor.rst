@@ -1,7 +1,13 @@
 ``ExposoGraph.llm_extractor``
 =============================
 
-LLM-powered entity and relation extraction using OpenAI structured outputs.
+LLM-powered entity and relation extraction using pluggable backends.
+
+``extract_graph(...)`` and ``extract_graph_with_usage(...)`` accept a
+``mode`` argument:
+
+- ``exploratory`` keeps provisional nodes and edges after grounding
+- ``strict`` returns only canonically grounded content
 
 .. autofunction:: ExposoGraph.llm_extractor.extract_graph
 

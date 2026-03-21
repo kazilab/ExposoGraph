@@ -5,8 +5,9 @@ import json
 import pytest
 from pydantic import ValidationError
 
+from ExposoGraph.config import GraphMode
 from ExposoGraph.engine import GraphEngine
-from ExposoGraph.models import Edge, EdgeType, KnowledgeGraph, Node, NodeType
+from ExposoGraph.models import Edge, EdgeType, KnowledgeGraph, MatchStatus, Node, NodeType
 
 
 @pytest.fixture
@@ -87,6 +88,40 @@ class TestLoadAndMerge:
         )
         engine.merge(extra)
         assert engine.node_count == 4
+
+    def test_merge_exploratory_keeps_unmatched_content(self, engine):
+        exploratory = KnowledgeGraph(
+            nodes=[
+                Node(id="n1", label="CYP1A1", type=NodeType.ENZYME),
+                Node(id="n2", label="Unknown Chemical", type=NodeType.CARCINOGEN),
+            ],
+            edges=[Edge(source="n1", target="n2", type=EdgeType.ACTIVATES)],
+        )
+
+        warnings = engine.merge(exploratory, mode=GraphMode.EXPLORATORY)
+
+        assert warnings == []
+        assert engine.node_count == 2
+        assert engine.edge_count == 1
+        assert engine.get_node("n2")["match_status"] == MatchStatus.UNMATCHED.value
+
+    def test_merge_strict_drops_unmatched_content(self, engine):
+        exploratory = KnowledgeGraph(
+            nodes=[
+                Node(id="n1", label="CYP1A1", type=NodeType.ENZYME),
+                Node(id="n2", label="Unknown Chemical", type=NodeType.CARCINOGEN),
+            ],
+            edges=[Edge(source="n1", target="n2", type=EdgeType.ACTIVATES)],
+        )
+
+        warnings = engine.merge(exploratory, mode=GraphMode.STRICT)
+
+        assert engine.node_count == 1
+        assert engine.edge_count == 0
+        assert engine.get_node("n1") is not None
+        assert engine.get_node("n2") is None
+        assert any("non-canonical node" in warning for warning in warnings)
+        assert any("non-canonical edge" in warning for warning in warnings)
 
 
 class TestRemove:

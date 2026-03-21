@@ -104,6 +104,8 @@ class TestOpenAIBackend:
         assert usage.provider == "openai"
         assert usage.prompt_tokens == 10
         assert usage.total_tokens == 15
+        response_format = mock_client.beta.chat.completions.parse.call_args.kwargs["response_format"]
+        assert response_format is not KnowledgeGraph
 
     @patch("openai.OpenAI")
     def test_fallback_to_json_mode(self, mock_openai_cls):

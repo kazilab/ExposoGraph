@@ -2,9 +2,7 @@
 
 from unittest.mock import MagicMock, patch
 
-import pytest
-
-from ExposoGraph.db_clients.ctd import CTDClient, ChemicalGeneInteraction
+from ExposoGraph.db_clients.ctd import CTDClient
 from ExposoGraph.db_clients.iarc import IARCClassifier, IARCGroup
 from ExposoGraph.db_clients.kegg import KEGGClient, KEGGGene, KEGGPathway
 
@@ -235,9 +233,22 @@ class TestIARCClassifier:
         assert len(clf.all_chemicals) >= 20
 
     def test_extra_data(self):
-        clf = IARCClassifier(extra={"CustomChem": {"group": "Group 1", "cas": "000-00-0", "category": "Test"}})
+        clf = IARCClassifier(
+            extra={"CustomChem": {"group": "Group 1", "cas": "000-00-0", "category": "Test"}},
+        )
         assert clf.classify("CustomChem") == IARCGroup.GROUP_1
 
     def test_alias_bap(self):
         clf = IARCClassifier()
         assert clf.classify("BaP") == clf.classify("Benzo[a]pyrene")
+
+    def test_get_entry_handles_common_case_variants(self):
+        clf = IARCClassifier()
+        entry = clf.get_entry("Vinyl Chloride")
+        assert entry is not None
+        assert entry["cas"] == "75-01-4"
+
+    def test_short_nitrosamine_aliases_are_available(self):
+        clf = IARCClassifier()
+        assert clf.classify("NNK") == IARCGroup.GROUP_1
+        assert clf.classify("NDMA") == IARCGroup.GROUP_2A

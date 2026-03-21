@@ -12,7 +12,18 @@ Gene Panel Data
 
 .. data:: ExposoGraph.reference_data.TIER2_GENES
 
-   List of 15 Tier 2 extended gene panel dictionaries.
+   List of 23 Tier 2 extended gene panel dictionaries.
+
+.. data:: ExposoGraph.reference_data.CURATION_SOURCE_MANIFEST
+
+   Structured curation-source manifest describing the manuscript-aligned
+   primary sources and the implementation-level supporting sources used by
+   ExposoGraph.
+
+.. data:: ExposoGraph.reference_data.REFERENCE_KEGG_PATHWAYS
+
+   Curated KEGG pathway catalog used to track the reference pathway context
+   for carcinogen metabolism and DNA-damage interpretation.
 
 .. data:: ExposoGraph.reference_data.ACTIVITY_SCORES
 

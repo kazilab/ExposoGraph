@@ -60,4 +60,4 @@ To build locally:
 
    pip install build
    python -m build
-   # Outputs dist/exposograph-0.0.1-py3-none-any.whl
+   # Outputs dist/exposograph-<version>-py3-none-any.whl
