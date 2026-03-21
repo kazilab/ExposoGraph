@@ -15,9 +15,23 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from .branding import APP_NAME, APP_TAGLINE, APP_VERSION, CONTACT_EMAIL, COPYRIGHT_HOLDER, DEVELOPED_BY
-from ._app_shared import get_engine, get_repository
-from . import ui_sidebar, ui_extract, ui_manual, ui_preview, ui_d3_viewer, ui_data
+from ExposoGraph.branding import (
+    APP_NAME,
+    APP_TAGLINE,
+    APP_VERSION,
+    CONTACT_EMAIL,
+    COPYRIGHT_HOLDER,
+    DEVELOPED_BY,
+)
+from ExposoGraph._app_shared import get_engine, get_repository
+from ExposoGraph import (
+    ui_sidebar,
+    ui_extract,
+    ui_manual,
+    ui_preview,
+    ui_d3_viewer,
+    ui_data,
+)
 
 # ── Page config ──────────────────────────────────────────────────────────
 

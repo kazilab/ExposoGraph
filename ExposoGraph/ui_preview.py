@@ -3,7 +3,17 @@
 from __future__ import annotations
 
 import streamlit as st
-from streamlit_agraph import Config, Edge as AEdge, Node as ANode, agraph
+
+try:
+    from streamlit_agraph import Config, Edge as AEdge, Node as ANode, agraph
+except ModuleNotFoundError as exc:  # pragma: no cover - depends on optional extra
+    Config = None  # type: ignore[assignment]
+    AEdge = None  # type: ignore[assignment]
+    ANode = None  # type: ignore[assignment]
+    agraph = None  # type: ignore[assignment]
+    _AGRAPH_IMPORT_ERROR: ModuleNotFoundError | None = exc
+else:
+    _AGRAPH_IMPORT_ERROR = None
 
 from .config import GraphVisibility
 from .engine import GraphEngine
@@ -22,6 +32,14 @@ from ._app_shared import (
 def render(engine: GraphEngine) -> None:
     """Render the Graph Preview tab."""
     st.markdown("#### Graph Preview")
+
+    if _AGRAPH_IMPORT_ERROR is not None:
+        st.error(
+            "Graph Preview requires the optional dependency `streamlit-agraph`. "
+            "Install it with `pip install streamlit-agraph` or "
+            "`pip install ExposoGraph[streamlit]`."
+        )
+        return
 
     if engine.node_count == 0:
         st.info("No data yet — use LLM Extract or Manual Entry to add nodes.")

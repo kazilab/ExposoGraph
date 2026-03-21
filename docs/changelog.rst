@@ -1,6 +1,13 @@
 Changelog
 =========
 
+0.0.3 (2026-03-21)
+------------------
+
+Release metadata synchronized for the current PyPI/GitHub publication.
+
+- Updated package and app version identifiers to ``0.0.3``
+
 0.0.2 (2026-03-19)
 ------------------
 
