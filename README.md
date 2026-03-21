@@ -8,7 +8,7 @@ Build, curate, and export carcinogen metabolism knowledge graphs using LLM-power
 
 Part of the **CarcinoGenomic Platform** — a 5-layer computational pipeline for individualized carcinogen metabolism risk assessment from germline DNA.
 
-Version: **0.0.2**
+Version: **0.0.3**
 Developed by: **Data analysis team @ KaziLab**
 Contact: **exposograph@kazilab.se**
 Copyright: **KaziLab**
