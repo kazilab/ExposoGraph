@@ -783,6 +783,20 @@ def _graph_data_script(
     return f"const GRAPH_DATA = {json.dumps(data, indent=2)};"
 
 
+def _inline_graph_data_script(template: str, data_script: str) -> str:
+    script_tag = f"<script>\n{data_script.rstrip()}\n</script>"
+    external_tag = '<script src="./graph-data.js"></script>'
+
+    if external_tag in template:
+        return template.replace(external_tag, script_tag, 1)
+
+    head_close = "</head>"
+    if head_close in template:
+        return template.replace(head_close, f"{script_tag}\n{head_close}", 1)
+
+    return f"{script_tag}\n{template}"
+
+
 def _default_template_candidates() -> list[Path]:
     repo_root = Path(__file__).resolve().parent.parent
     return [
@@ -1036,17 +1050,17 @@ def to_interactive_html_string(
     """Render a self-contained interactive HTML document."""
     template = _load_viewer_template(template_path)
     data_script = _graph_data_script(engine, visibility=visibility)
-    script_tag = f"<script>\n{data_script}\n</script>"
-    external_tag = '<script src="./graph-data.js"></script>'
+    return _inline_graph_data_script(template, data_script)
 
-    if external_tag in template:
-        return template.replace(external_tag, script_tag, 1)
 
-    head_close = "</head>"
-    if head_close in template:
-        return template.replace(head_close, f"{script_tag}\n{head_close}", 1)
-
-    return f"{script_tag}\n{template}"
+def bundle_to_html_string(
+    template_path: str | Path,
+    graph_data_path: str | Path,
+) -> str:
+    """Render a viewer bundle directory as a self-contained HTML document."""
+    template = Path(template_path).read_text(encoding="utf-8")
+    data_script = Path(graph_data_path).read_text(encoding="utf-8")
+    return _inline_graph_data_script(template, data_script)
 
 
 def to_interactive_html(
