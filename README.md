@@ -11,11 +11,12 @@
 [![ResearchSquare](https://img.shields.io/badge/ResearchSquare-rs--9202489%2Fv1-00A0E0.svg)](https://www.researchsquare.com/article/rs-9202489/v1)
 [![bioRxiv](https://img.shields.io/badge/bioRxiv-10.64898%2F2026.03.22.713456-b31b1b.svg)](https://doi.org/10.64898/2026.03.22.713456)
 
+[![@KaziLab.se](https://img.shields.io/website?url=https://www.kazilab.se/)](https://www.kazilab.se/)
+
 Build, curate, and export carcinogen metabolism knowledge graphs using LLM-powered extraction and manual entry.
 
 Part of the **CarcinoGenomic Platform** — a 5-layer computational pipeline for individualized carcinogen metabolism risk assessment from germline DNA.
 
-Version: **0.0.3**
 Developed by: **Data analysis team @ KaziLab**
 Contact: **exposograph@kazilab.se**
 Copyright: **KaziLab**
