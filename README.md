@@ -1,6 +1,6 @@
 # ExposoGraph
 
-[![GitHub version](https://badgen.net/badge/icon/GitHub?icon=github&label)](https://github.com/kazilab/ExposoGraph)
+[![GitHub Version](https://badgen.net/badge/icon/GitHub?icon=github&label)](https://github.com/kazilab/ExposoGraph)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://ExposoGraph.streamlit.app)
