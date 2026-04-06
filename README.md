@@ -7,8 +7,7 @@
 [![PyPI version](https://img.shields.io/pypi/v/ExposoGraph.svg)](https://pypi.org/project/ExposoGraph/)
 [![Documentation Status](https://readthedocs.org/projects/ExposoGraph/badge/?version=latest)](https://ExposoGraph.readthedocs.io/en/latest/?badge=latest)
 [![ResearchSquare](https://img.shields.io/badge/ResearchSquare-rs--9202489%2Fv1-00A0E0.svg)](https://www.researchsquare.com/article/rs-9202489/v1)
-[![arXiv](https://img.shields.io/badge/arXiv-XXXX.XXXXX-b31b1b?logo=arxiv&logoColor=white)](https://arxiv.org/abs/XXXX.XXXXX)
-[![DOI](https://img.shields.io/badge/10.64898/2026.03.22.713456-blue.svg)](https://doi.org/10.64898/2026.03.22.713456)
+[![bioXiv](https://img.shields.io/badge/10.64898/2026.03.22.713456-blue.svg)](https://doi.org/10.64898/2026.03.22.713456)
 <!-- PyPI version badge -->
 
 Build, curate, and export carcinogen metabolism knowledge graphs using LLM-powered extraction and manual entry.
