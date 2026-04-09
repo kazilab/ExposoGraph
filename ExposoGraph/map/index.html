@@ -2,12 +2,6 @@
 <html lang="en" data-theme="light">
 <head>
 <!--
-   ______                            __
-  / ____/___  ____ ___  ____  __  __/ /____  _____
- / /   / __ \/ __ `__ \/ __ \/ / / / __/ _ \/ ___/
-/ /___/ /_/ / / / / / / /_/ / /_/ / /_/  __/ /
-\____/\____/_/ /_/ /_/ .___/\__,_/\__/\___/_/
-                    /_/
         Created with ExposoGraph
         https://github.com/kazilab/ExposoGraph
 -->
@@ -687,7 +681,7 @@ node.append("text")
   .attr("font-size", d => d.type === "Carcinogen" ? "10px" : d.type === "Pathway" ? "7px" : "8px")
   .attr("font-weight", d => d.type === "Carcinogen" ? "600" : "400")
   .attr("font-family", "Inter, sans-serif")
-  .attr("fill", "#ddd")
+  .attr("fill", "green")
   .attr("text-anchor", "middle")
   .attr("dy", d => (NODE_SIZES[d.type] || 7) + 12)
   .attr("paint-order", "stroke")
