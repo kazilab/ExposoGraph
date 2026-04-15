@@ -184,6 +184,21 @@ class TestMetabolismChain:
         # Lung has no metabolism edges — chain should be minimal
         assert "Lung" not in chain.node_ids or len(chain.edges) == 0
 
+    def test_excludes_unlabeled_branches_that_only_share_an_enzyme(self, engine):
+        engine.add_node(Node(id="BaP", label="BaP", type=NodeType.CARCINOGEN))
+        engine.add_node(Node(id="CYP1A1", label="CYP1A1", type=NodeType.ENZYME))
+        engine.add_node(Node(id="BPDE", label="BPDE", type=NodeType.METABOLITE))
+        engine.add_node(Node(id="OtherMet", label="OtherMet", type=NodeType.METABOLITE))
+
+        engine.add_edge(Edge(source="CYP1A1", target="BaP", type=EdgeType.ACTIVATES, carcinogen="BaP"))
+        engine.add_edge(Edge(source="BPDE", target="OtherMet", type=EdgeType.FORMS_ADDUCT))
+        engine.add_edge(Edge(source="CYP1A1", target="OtherMet", type=EdgeType.ACTIVATES))
+
+        chain = metabolism_chain(engine, "BaP")
+
+        assert chain.node_ids == ["BaP", "CYP1A1"]
+        assert len(chain.edges) == 1
+
 
 # ── Pathway subgraph ─────────────────────────────────────────────────────
 

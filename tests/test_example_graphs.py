@@ -17,11 +17,11 @@ def test_full_legends_graph_matches_phase2_target_counts():
     node_types = Counter(node.type.value for node in kg.nodes)
     edge_types = Counter(edge.type.value for edge in kg.edges)
 
-    assert len(kg.nodes) == 96
-    assert len(kg.edges) == 102
+    assert len(kg.nodes) == 98
+    assert len(kg.edges) == 110
     assert node_types == {
         "Carcinogen": 15,
-        "Enzyme": 36,
+        "Enzyme": 38,
         "Metabolite": 28,
         "DNA_Adduct": 11,
         "Pathway": 6,
@@ -31,7 +31,7 @@ def test_full_legends_graph_matches_phase2_target_counts():
         "DETOXIFIES": 23,
         "FORMS_ADDUCT": 14,
         "PATHWAY": 19,
-        "REPAIRS": 9,
+        "REPAIRS": 17,
         "TRANSPORTS": 7,
     }
 
@@ -39,8 +39,8 @@ def test_full_legends_graph_matches_phase2_target_counts():
 def test_full_legends_engine_loads_and_validates():
     engine = build_full_legends_engine()
 
-    assert engine.node_count == 96
-    assert engine.edge_count == 102
+    assert engine.node_count == 98
+    assert engine.edge_count == 110
     assert engine.validate() == []
 
 
@@ -87,13 +87,13 @@ def test_full_legends_graph_exposes_curated_kegg_pathways():
 def test_full_legends_architecture_summary_matches_seeded_graph():
     summary = build_full_legends_architecture_summary()
 
-    assert summary.node_count == 96
-    assert summary.edge_count == 102
+    assert summary.node_count == 98
+    assert summary.edge_count == 110
     assert summary.node_type_count == 5
     assert summary.edge_type_count == 6
     assert summary.node_type_counts == {
         "Carcinogen": 15,
-        "Enzyme": 36,
+        "Enzyme": 38,
         "Metabolite": 28,
         "DNA_Adduct": 11,
         "Pathway": 6,
@@ -103,7 +103,7 @@ def test_full_legends_architecture_summary_matches_seeded_graph():
         "DETOXIFIES": 23,
         "TRANSPORTS": 7,
         "FORMS_ADDUCT": 14,
-        "REPAIRS": 9,
+        "REPAIRS": 17,
         "PATHWAY": 19,
     }
 
@@ -128,7 +128,7 @@ def test_full_legends_architecture_summary_keeps_manuscript_inventories():
         "Phase I": 14,
         "Phase II": 14,
         "Phase III": 3,
-        "DNA Repair": 5,
+        "DNA Repair": 7,
     }
     assert "DMBA" in summary.carcinogens
     assert "5a-DHT" in summary.carcinogens
@@ -194,11 +194,11 @@ def test_full_legends_graph_can_merge_optional_androgen_module():
     node_types = Counter(node.type.value for node in kg.nodes)
     edge_types = Counter(edge.type.value for edge in kg.edges)
 
-    assert len(kg.nodes) == 107
-    assert len(kg.edges) == 135
+    assert len(kg.nodes) == 109
+    assert len(kg.edges) == 143
     assert node_types == {
         "Carcinogen": 15,
-        "Enzyme": 36,
+        "Enzyme": 38,
         "Gene": 5,
         "Metabolite": 28,
         "DNA_Adduct": 13,
@@ -211,7 +211,7 @@ def test_full_legends_graph_can_merge_optional_androgen_module():
         "DETOXIFIES": 24,
         "TRANSPORTS": 7,
         "FORMS_ADDUCT": 16,
-        "REPAIRS": 9,
+        "REPAIRS": 17,
         "PATHWAY": 29,
         "EXPRESSED_IN": 7,
         "ENCODES": 4,
@@ -222,13 +222,13 @@ def test_full_legends_architecture_summary_can_include_androgen_module():
     summary = build_full_legends_architecture_summary(include_androgen_module=True)
     enzyme_categories = {group.name: group.count for group in summary.enzyme_categories}
 
-    assert summary.node_count == 107
-    assert summary.edge_count == 135
+    assert summary.node_count == 109
+    assert summary.edge_count == 143
     assert summary.node_type_count == 7
     assert summary.edge_type_count == 9
     assert summary.node_type_counts == {
         "Carcinogen": 15,
-        "Enzyme": 36,
+        "Enzyme": 38,
         "Gene": 5,
         "Metabolite": 28,
         "DNA_Adduct": 13,
@@ -240,7 +240,7 @@ def test_full_legends_architecture_summary_can_include_androgen_module():
         "DETOXIFIES": 24,
         "TRANSPORTS": 7,
         "FORMS_ADDUCT": 16,
-        "REPAIRS": 9,
+        "REPAIRS": 17,
         "PATHWAY": 29,
         "EXPRESSED_IN": 7,
         "ENCODES": 4,
@@ -250,7 +250,7 @@ def test_full_legends_architecture_summary_can_include_androgen_module():
         "Phase I": 14,
         "Phase II": 14,
         "Phase III": 3,
-        "DNA Repair": 5,
+        "DNA Repair": 7,
     }
     assert "AR proliferative transcriptional program" in summary.pathway_labels
     assert "CYP3A5" in summary.enzymes

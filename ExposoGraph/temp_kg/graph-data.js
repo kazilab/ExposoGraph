@@ -481,7 +481,7 @@ const GRAPH_DATA = {
       "source_db": "NCBI Gene; GTEx; ClinPGx",
       "evidence": "Canonical human gene identifier and nomenclature.",
       "tissue": "liver, nasal mucosa",
-      "activity_score": 2.0,
+      "activity_score": 2,
       "tier": 1,
       "origin": "imported",
       "match_status": "canonical",
@@ -606,7 +606,7 @@ const GRAPH_DATA = {
       "source_db": "NCBI Gene; GTEx; ClinPGx",
       "evidence": "Canonical human gene identifier and nomenclature.",
       "tissue": "liver, intestine",
-      "activity_score": 1.0,
+      "activity_score": 1,
       "tier": 1,
       "origin": "imported",
       "match_status": "canonical",
@@ -848,7 +848,7 @@ const GRAPH_DATA = {
       "id": "CYP3A5",
       "label": "CYP3A5",
       "type": "Enzyme",
-      "detail": "6\u03b2-hydroxylation of testosterone; AR nuclear translocation in prostate",
+      "detail": "6β-hydroxylation of testosterone; AR nuclear translocation in prostate",
       "phase": "I",
       "role": "Mixed",
       "origin": "imported",
@@ -906,7 +906,7 @@ const GRAPH_DATA = {
       "source_db": "NCBI Gene; GTEx; ClinPGx",
       "evidence": "Canonical human gene identifier and nomenclature.",
       "tissue": "liver, lung",
-      "activity_score": 1.0,
+      "activity_score": 1,
       "tier": 1,
       "origin": "imported",
       "match_status": "canonical",
@@ -948,7 +948,7 @@ const GRAPH_DATA = {
       "source_db": "NCBI Gene; GTEx; ClinPGx",
       "evidence": "Canonical human gene identifier and nomenclature.",
       "tissue": "liver, kidney, blood cells",
-      "activity_score": 1.0,
+      "activity_score": 1,
       "tier": 1,
       "origin": "imported",
       "match_status": "canonical",
@@ -1031,7 +1031,7 @@ const GRAPH_DATA = {
       "source_db": "NCBI Gene; GTEx; ClinPGx",
       "evidence": "Canonical human gene identifier and nomenclature.",
       "tissue": "liver, intestine",
-      "activity_score": 1.0,
+      "activity_score": 1,
       "tier": 1,
       "origin": "imported",
       "match_status": "canonical",
@@ -1155,7 +1155,7 @@ const GRAPH_DATA = {
       "source_db": "NCBI Gene; GTEx; ClinPGx",
       "evidence": "Canonical human gene identifier and nomenclature.",
       "tissue": "liver, intestine",
-      "activity_score": 1.0,
+      "activity_score": 1,
       "tier": 1,
       "origin": "imported",
       "match_status": "canonical",
@@ -1238,7 +1238,7 @@ const GRAPH_DATA = {
       "source_db": "NCBI Gene; GTEx; ClinPGx",
       "evidence": "Canonical human gene identifier and nomenclature.",
       "tissue": "liver, lung, colon",
-      "activity_score": 1.0,
+      "activity_score": 1,
       "tier": 1,
       "origin": "imported",
       "match_status": "canonical",
@@ -1367,7 +1367,7 @@ const GRAPH_DATA = {
       "id": "HSD3B2",
       "label": "HSD3B2",
       "type": "Enzyme",
-      "detail": "3\u03b2-Hydroxysteroid dehydrogenase type 2; DHEA\u2192androstenedione conversion",
+      "detail": "3β-Hydroxysteroid dehydrogenase type 2; DHEA→androstenedione conversion",
       "phase": "I",
       "role": "Activation",
       "origin": "imported",
@@ -1378,7 +1378,7 @@ const GRAPH_DATA = {
       "id": "AKR1C2",
       "label": "AKR1C2",
       "type": "Enzyme",
-      "detail": "3\u03b1-Hydroxysteroid dehydrogenase; DHT\u21923\u03b1-androstanediol inactivation",
+      "detail": "3α-Hydroxysteroid dehydrogenase; DHT→3α-androstanediol inactivation",
       "phase": "II",
       "role": "Detoxification",
       "origin": "imported",
@@ -1559,7 +1559,7 @@ const GRAPH_DATA = {
       "source_db": "NCBI Gene; GTEx; CTD",
       "evidence": "Canonical human gene identifier and nomenclature.",
       "tissue": "ubiquitous",
-      "activity_score": 1.0,
+      "activity_score": 1,
       "tier": 2,
       "origin": "imported",
       "match_status": "canonical",
@@ -1642,7 +1642,7 @@ const GRAPH_DATA = {
       "source_db": "NCBI Gene; GTEx; CTD",
       "evidence": "Canonical human gene identifier and nomenclature.",
       "tissue": "ubiquitous (nuclear + mitochondrial)",
-      "activity_score": 1.0,
+      "activity_score": 1,
       "tier": 2,
       "origin": "imported",
       "match_status": "canonical",
@@ -1684,7 +1684,7 @@ const GRAPH_DATA = {
       "source_db": "NCBI Gene; GTEx; CTD",
       "evidence": "Canonical human gene identifier and nomenclature.",
       "tissue": "liver, colon, lung, brain",
-      "activity_score": 1.0,
+      "activity_score": 1,
       "tier": 2,
       "origin": "imported",
       "match_status": "canonical",
@@ -1717,13 +1717,97 @@ const GRAPH_DATA = {
       ]
     },
     {
+      "id": "MLH1",
+      "label": "MLH1",
+      "type": "Enzyme",
+      "detail": "MutL homolog 1; mismatch repair of replication errors past DNA adducts",
+      "group": "DNA Repair (MMR)",
+      "role": "Repair",
+      "source_db": "NCBI Gene; GTEx; CTD",
+      "evidence": "Canonical human gene identifier and nomenclature.",
+      "tissue": "ubiquitous",
+      "activity_score": 1,
+      "tier": 2,
+      "origin": "imported",
+      "match_status": "canonical",
+      "canonical_id": "MLH1",
+      "canonical_label": "MLH1",
+      "canonical_namespace": "reference_panel",
+      "provenance": [
+        {
+          "source_db": "NCBI Gene",
+          "record_id": "4292",
+          "evidence": "Canonical human gene identifier and nomenclature.",
+          "citation": "NCBI Gene record for MLH1 (Homo sapiens)",
+          "url": "https://www.ncbi.nlm.nih.gov/gene/4292"
+        },
+        {
+          "source_db": "GTEx",
+          "record_id": "MLH1",
+          "evidence": "Human tissue-expression context used to seed the panel tissue field.",
+          "tissue": "ubiquitous",
+          "citation": "GTEx Portal expression profile for MLH1",
+          "url": "https://gtexportal.org/home/gene/MLH1"
+        },
+        {
+          "source_db": "CTD",
+          "record_id": "MLH1",
+          "evidence": "Toxicogenomic context supporting the DNA Repair (MMR) assignment.",
+          "citation": "Comparative Toxicogenomics Database record for MLH1",
+          "url": "https://ctdbase.org/detail.go?type=gene&acc=MLH1"
+        }
+      ]
+    },
+    {
+      "id": "MSH2",
+      "label": "MSH2",
+      "type": "Enzyme",
+      "detail": "MutS homolog 2; mismatch recognition during post-replicative repair at adduct sites",
+      "group": "DNA Repair (MMR)",
+      "role": "Repair",
+      "source_db": "NCBI Gene; GTEx; CTD",
+      "evidence": "Canonical human gene identifier and nomenclature.",
+      "tissue": "ubiquitous",
+      "activity_score": 1,
+      "tier": 2,
+      "origin": "imported",
+      "match_status": "canonical",
+      "canonical_id": "MSH2",
+      "canonical_label": "MSH2",
+      "canonical_namespace": "reference_panel",
+      "provenance": [
+        {
+          "source_db": "NCBI Gene",
+          "record_id": "4436",
+          "evidence": "Canonical human gene identifier and nomenclature.",
+          "citation": "NCBI Gene record for MSH2 (Homo sapiens)",
+          "url": "https://www.ncbi.nlm.nih.gov/gene/4436"
+        },
+        {
+          "source_db": "GTEx",
+          "record_id": "MSH2",
+          "evidence": "Human tissue-expression context used to seed the panel tissue field.",
+          "tissue": "ubiquitous",
+          "citation": "GTEx Portal expression profile for MSH2",
+          "url": "https://gtexportal.org/home/gene/MSH2"
+        },
+        {
+          "source_db": "CTD",
+          "record_id": "MSH2",
+          "evidence": "Toxicogenomic context supporting the DNA Repair (MMR) assignment.",
+          "citation": "Comparative Toxicogenomics Database record for MSH2",
+          "url": "https://ctdbase.org/detail.go?type=gene&acc=MSH2"
+        }
+      ]
+    },
+    {
       "id": "BPDE",
       "label": "BPDE",
       "type": "Metabolite",
-      "detail": "Ultimate diol-epoxide carcinogen formed from BaP.",
+      "detail": "Benzo[a]pyrene-7,8-diol-9,10-epoxide; ultimate diol-epoxide carcinogen formed from BaP.",
       "reactivity": "High",
       "source_db": "Curated showcase",
-      "evidence": "Ultimate diol-epoxide carcinogen formed from BaP.",
+      "evidence": "Benzo[a]pyrene-7,8-diol-9,10-epoxide; ultimate diol-epoxide carcinogen formed from BaP.",
       "origin": "imported",
       "match_status": "canonical",
       "canonical_id": "BPDE",
@@ -1733,7 +1817,7 @@ const GRAPH_DATA = {
         {
           "source_db": "Curated showcase",
           "record_id": "BPDE",
-          "evidence": "Ultimate diol-epoxide carcinogen formed from BaP.",
+          "evidence": "Benzo[a]pyrene-7,8-diol-9,10-epoxide; ultimate diol-epoxide carcinogen formed from BaP.",
           "citation": "Curated metabolite entry for BPDE"
         }
       ]
@@ -2120,7 +2204,7 @@ const GRAPH_DATA = {
       "id": "Androstenedione",
       "label": "Androstenedione",
       "type": "Metabolite",
-      "detail": "\u03944-Androstenedione; immediate testosterone precursor",
+      "detail": "Δ4-Androstenedione; immediate testosterone precursor",
       "reactivity": "Low",
       "origin": "imported",
       "match_status": "unmatched",
@@ -2128,7 +2212,7 @@ const GRAPH_DATA = {
     },
     {
       "id": "HydroxyTestosterone",
-      "label": "6\u03b2-OH-Testosterone",
+      "label": "6β-OH-Testosterone",
       "type": "Metabolite",
       "detail": "CYP3A4/5-catalyzed hydroxylated testosterone; inactive metabolite",
       "reactivity": "Low",
@@ -2182,9 +2266,9 @@ const GRAPH_DATA = {
     },
     {
       "id": "3aAdiol",
-      "label": "3\u03b1-Androstanediol",
+      "label": "3α-Androstanediol",
       "type": "Metabolite",
-      "detail": "AKR1C2-catalyzed DHT metabolite; weak ER\u03b2 agonist",
+      "detail": "AKR1C2-catalyzed DHT metabolite; weak ERβ agonist",
       "reactivity": "Low",
       "origin": "imported",
       "match_status": "unmatched",
@@ -2328,7 +2412,7 @@ const GRAPH_DATA = {
     },
     {
       "id": "etheno_dA",
-      "label": "\u03b5dA (etheno-dA)",
+      "label": "εdA (etheno-dA)",
       "type": "DNA_Adduct",
       "detail": "1,N6-etheno-deoxyadenosine; vinyl chloride marker",
       "origin": "imported",
@@ -2337,7 +2421,7 @@ const GRAPH_DATA = {
     },
     {
       "id": "etheno_dC",
-      "label": "\u03b5dC (etheno-dC)",
+      "label": "εdC (etheno-dC)",
       "type": "DNA_Adduct",
       "detail": "3,N4-etheno-deoxycytidine; vinyl chloride marker",
       "origin": "imported",
@@ -2348,7 +2432,7 @@ const GRAPH_DATA = {
       "id": "E2_depurin",
       "label": "E2-depurinating",
       "type": "DNA_Adduct",
-      "detail": "4-OHE2 depurinating adducts; apurinic sites \u2192 mutations",
+      "detail": "4-OHE2 depurinating adducts; apurinic sites → mutations",
       "origin": "imported",
       "match_status": "unmatched",
       "provenance": []
@@ -2453,7 +2537,7 @@ const GRAPH_DATA = {
       "id": "KEGG982",
       "label": "Drug Metabolism\nCYP450 (KEGG:00982)",
       "type": "Pathway",
-      "detail": "Drug metabolism \u2014 cytochrome P450",
+      "detail": "Drug metabolism — cytochrome P450",
       "origin": "imported",
       "match_status": "unmatched",
       "provenance": []
@@ -2500,7 +2584,8 @@ const GRAPH_DATA = {
       "match_status": "canonical",
       "canonical_predicate": "FORMS_ADDUCT",
       "canonical_namespace": "schema",
-      "provenance": []
+      "provenance": [],
+      "weight": 0.5
     },
     {
       "source": "BaP",
@@ -2521,7 +2606,8 @@ const GRAPH_DATA = {
           "citation": "KEGG pathway record for Chemical carcinogenesis - DNA adducts",
           "url": "https://www.kegg.jp/entry/hsa05204"
         }
-      ]
+      ],
+      "weight": 0.5
     },
     {
       "source": "BaP",
@@ -2542,7 +2628,8 @@ const GRAPH_DATA = {
           "citation": "KEGG pathway record for Xenobiotic metabolism by cytochrome P450",
           "url": "https://www.kegg.jp/entry/hsa00980"
         }
-      ]
+      ],
+      "weight": 0.5
     },
     {
       "source": "PhIP",
@@ -2563,7 +2650,8 @@ const GRAPH_DATA = {
           "citation": "KEGG pathway record for Xenobiotic metabolism by cytochrome P450",
           "url": "https://www.kegg.jp/entry/hsa00980"
         }
-      ]
+      ],
+      "weight": 0.25
     },
     {
       "source": "NNK",
@@ -2574,7 +2662,8 @@ const GRAPH_DATA = {
       "match_status": "canonical",
       "canonical_predicate": "PATHWAY",
       "canonical_namespace": "schema",
-      "provenance": []
+      "provenance": [],
+      "weight": 0.25
     },
     {
       "source": "AFB1",
@@ -2585,7 +2674,8 @@ const GRAPH_DATA = {
       "match_status": "canonical",
       "canonical_predicate": "PATHWAY",
       "canonical_namespace": "schema",
-      "provenance": []
+      "provenance": [],
+      "weight": 0.25
     },
     {
       "source": "Testosterone",
@@ -2596,7 +2686,8 @@ const GRAPH_DATA = {
       "match_status": "canonical",
       "canonical_predicate": "FORMS_ADDUCT",
       "canonical_namespace": "schema",
-      "provenance": []
+      "provenance": [],
+      "weight": 0.5
     },
     {
       "source": "Testosterone",
@@ -2617,7 +2708,8 @@ const GRAPH_DATA = {
           "citation": "KEGG pathway record for Steroid hormone biosynthesis",
           "url": "https://www.kegg.jp/entry/hsa00140"
         }
-      ]
+      ],
+      "weight": 0.5
     },
     {
       "source": "Testosterone",
@@ -2628,7 +2720,8 @@ const GRAPH_DATA = {
       "match_status": "canonical",
       "canonical_predicate": "PATHWAY",
       "canonical_namespace": "schema",
-      "provenance": []
+      "provenance": [],
+      "weight": 0.5
     },
     {
       "source": "DHT",
@@ -2649,7 +2742,8 @@ const GRAPH_DATA = {
           "citation": "KEGG pathway record for Steroid hormone biosynthesis",
           "url": "https://www.kegg.jp/entry/hsa00140"
         }
-      ]
+      ],
+      "weight": 0.25
     },
     {
       "source": "Benzene",
@@ -2670,7 +2764,8 @@ const GRAPH_DATA = {
           "citation": "KEGG pathway record for Chemical carcinogenesis - reactive oxygen species",
           "url": "https://www.kegg.jp/entry/hsa05208"
         }
-      ]
+      ],
+      "weight": 0.25
     },
     {
       "source": "Benzene",
@@ -2691,7 +2786,8 @@ const GRAPH_DATA = {
           "citation": "KEGG pathway record for Xenobiotic metabolism by cytochrome P450",
           "url": "https://www.kegg.jp/entry/hsa00980"
         }
-      ]
+      ],
+      "weight": 0.25
     },
     {
       "source": "CYP1A1",
@@ -2712,7 +2808,8 @@ const GRAPH_DATA = {
           "evidence": "BaP epoxidation",
           "citation": "BaP epoxidation"
         }
-      ]
+      ],
+      "weight": 0.3333
     },
     {
       "source": "CYP1A1",
@@ -2733,7 +2830,8 @@ const GRAPH_DATA = {
           "evidence": "Second epoxidation to BPDE",
           "citation": "Second epoxidation to BPDE"
         }
-      ]
+      ],
+      "weight": 0.3333
     },
     {
       "source": "CYP1A1",
@@ -2743,7 +2841,8 @@ const GRAPH_DATA = {
       "carcinogen": "E2",
       "origin": "imported",
       "match_status": "unmatched",
-      "provenance": []
+      "provenance": [],
+      "weight": 0.3333
     },
     {
       "source": "CYP1A1",
@@ -2764,7 +2863,8 @@ const GRAPH_DATA = {
           "citation": "KEGG pathway record for Xenobiotic metabolism by cytochrome P450",
           "url": "https://www.kegg.jp/entry/hsa00980"
         }
-      ]
+      ],
+      "weight": 0.3333
     },
     {
       "source": "CYP1B1",
@@ -2785,7 +2885,8 @@ const GRAPH_DATA = {
           "evidence": "Extrahepatic BaP epoxidation",
           "citation": "Extrahepatic BaP epoxidation"
         }
-      ]
+      ],
+      "weight": 0.3333
     },
     {
       "source": "CYP1B1",
@@ -2806,7 +2907,8 @@ const GRAPH_DATA = {
           "evidence": "Second epoxidation to BPDE",
           "citation": "Second epoxidation to BPDE"
         }
-      ]
+      ],
+      "weight": 0.3333
     },
     {
       "source": "CYP1B1",
@@ -2827,7 +2929,8 @@ const GRAPH_DATA = {
           "evidence": "Catechol estrogen formation",
           "citation": "Catechol estrogen formation"
         }
-      ]
+      ],
+      "weight": 0.3333
     },
     {
       "source": "CYP1A2",
@@ -2848,7 +2951,8 @@ const GRAPH_DATA = {
           "evidence": "N-hydroxylation",
           "citation": "N-hydroxylation"
         }
-      ]
+      ],
+      "weight": 0.3333
     },
     {
       "source": "CYP1A2",
@@ -2869,7 +2973,8 @@ const GRAPH_DATA = {
           "evidence": "N-hydroxylation",
           "citation": "N-hydroxylation"
         }
-      ]
+      ],
+      "weight": 0.3333
     },
     {
       "source": "CYP1A2",
@@ -2890,7 +2995,8 @@ const GRAPH_DATA = {
           "evidence": "Benzidine N-hydroxylation",
           "citation": "Benzidine N-hydroxylation"
         }
-      ]
+      ],
+      "weight": 0.3333
     },
     {
       "source": "CYP1A2",
@@ -2911,7 +3017,8 @@ const GRAPH_DATA = {
           "evidence": "Secondary epoxidation",
           "citation": "Secondary epoxidation"
         }
-      ]
+      ],
+      "weight": 0.3333
     },
     {
       "source": "CYP1A2",
@@ -2920,7 +3027,8 @@ const GRAPH_DATA = {
       "label": "member",
       "origin": "imported",
       "match_status": "unmatched",
-      "provenance": []
+      "provenance": [],
+      "weight": 0.3333
     },
     {
       "source": "CYP2A6",
@@ -2941,7 +3049,8 @@ const GRAPH_DATA = {
           "evidence": "Alpha-hydroxylation",
           "citation": "Alpha-hydroxylation"
         }
-      ]
+      ],
+      "weight": 0.3333
     },
     {
       "source": "CYP2A13",
@@ -2962,7 +3071,8 @@ const GRAPH_DATA = {
           "evidence": "Pulmonary alpha-hydroxylation",
           "citation": "Pulmonary alpha-hydroxylation"
         }
-      ]
+      ],
+      "weight": 0.3333
     },
     {
       "source": "CYP2E1",
@@ -2983,7 +3093,8 @@ const GRAPH_DATA = {
           "evidence": "Alpha-hydroxylation",
           "citation": "Alpha-hydroxylation"
         }
-      ]
+      ],
+      "weight": 0.3333
     },
     {
       "source": "CYP2E1",
@@ -3004,7 +3115,8 @@ const GRAPH_DATA = {
           "evidence": "Benzene oxidation",
           "citation": "Benzene oxidation"
         }
-      ]
+      ],
+      "weight": 0.3333
     },
     {
       "source": "CYP2E1",
@@ -3025,7 +3137,8 @@ const GRAPH_DATA = {
           "evidence": "Vinyl chloride oxidation",
           "citation": "Vinyl chloride oxidation"
         }
-      ]
+      ],
+      "weight": 0.3333
     },
     {
       "source": "CYP2E1",
@@ -3036,7 +3149,8 @@ const GRAPH_DATA = {
       "match_status": "canonical",
       "canonical_predicate": "PATHWAY",
       "canonical_namespace": "schema",
-      "provenance": []
+      "provenance": [],
+      "weight": 0.3333
     },
     {
       "source": "CYP3A4",
@@ -3057,17 +3171,19 @@ const GRAPH_DATA = {
           "evidence": "Aflatoxin epoxidation",
           "citation": "Aflatoxin epoxidation"
         }
-      ]
+      ],
+      "weight": 0.3333
     },
     {
       "source": "CYP3A4",
       "target": "HydroxyTestosterone",
       "type": "DETOXIFIES",
-      "label": "6\u03b2-hydroxylation",
+      "label": "6β-hydroxylation",
       "carcinogen": "Testosterone",
       "origin": "imported",
       "match_status": "unmatched",
-      "provenance": []
+      "provenance": [],
+      "weight": 0.3333
     },
     {
       "source": "CYP3A4",
@@ -3076,7 +3192,8 @@ const GRAPH_DATA = {
       "label": "member",
       "origin": "imported",
       "match_status": "unmatched",
-      "provenance": []
+      "provenance": [],
+      "weight": 0.3333
     },
     {
       "source": "EPHX1",
@@ -3088,7 +3205,8 @@ const GRAPH_DATA = {
       "match_status": "canonical",
       "canonical_predicate": "ACTIVATES",
       "canonical_namespace": "schema",
-      "provenance": []
+      "provenance": [],
+      "weight": 0.3333
     },
     {
       "source": "EPHX1",
@@ -3100,7 +3218,8 @@ const GRAPH_DATA = {
       "match_status": "canonical",
       "canonical_predicate": "DETOXIFIES",
       "canonical_namespace": "schema",
-      "provenance": []
+      "provenance": [],
+      "weight": 0.3333
     },
     {
       "source": "CYP17A1",
@@ -3110,7 +3229,8 @@ const GRAPH_DATA = {
       "carcinogen": "Testosterone",
       "origin": "imported",
       "match_status": "unmatched",
-      "provenance": []
+      "provenance": [],
+      "weight": 0.25
     },
     {
       "source": "CYP17A1",
@@ -3131,19 +3251,21 @@ const GRAPH_DATA = {
           "citation": "KEGG pathway record for Steroid hormone biosynthesis",
           "url": "https://www.kegg.jp/entry/hsa00140"
         }
-      ]
+      ],
+      "weight": 0.25
     },
     {
       "source": "SRD5A2",
       "target": "DHT",
       "type": "ACTIVATES",
-      "label": "5\u03b1-reduction (prostate)",
+      "label": "5α-reduction (prostate)",
       "carcinogen": "Testosterone",
       "origin": "imported",
       "match_status": "canonical",
       "canonical_predicate": "ACTIVATES",
       "canonical_namespace": "schema",
-      "provenance": []
+      "provenance": [],
+      "weight": 0.25
     },
     {
       "source": "SRD5A2",
@@ -3164,19 +3286,21 @@ const GRAPH_DATA = {
           "citation": "KEGG pathway record for Steroid hormone biosynthesis",
           "url": "https://www.kegg.jp/entry/hsa00140"
         }
-      ]
+      ],
+      "weight": 0.25
     },
     {
       "source": "SRD5A1",
       "target": "DHT",
       "type": "ACTIVATES",
-      "label": "5\u03b1-reduction (peripheral)",
+      "label": "5α-reduction (peripheral)",
       "carcinogen": "Testosterone",
       "origin": "imported",
       "match_status": "canonical",
       "canonical_predicate": "ACTIVATES",
       "canonical_namespace": "schema",
-      "provenance": []
+      "provenance": [],
+      "weight": 0.25
     },
     {
       "source": "CYP19A1",
@@ -3186,7 +3310,8 @@ const GRAPH_DATA = {
       "carcinogen": "Testosterone",
       "origin": "imported",
       "match_status": "unmatched",
-      "provenance": []
+      "provenance": [],
+      "weight": 0.3333
     },
     {
       "source": "CYP19A1",
@@ -3207,29 +3332,32 @@ const GRAPH_DATA = {
           "citation": "KEGG pathway record for Steroid hormone biosynthesis",
           "url": "https://www.kegg.jp/entry/hsa00140"
         }
-      ]
+      ],
+      "weight": 0.3333
     },
     {
       "source": "CYP3A5",
       "target": "HydroxyTestosterone",
       "type": "DETOXIFIES",
-      "label": "6\u03b2-hydroxylation",
+      "label": "6β-hydroxylation",
       "carcinogen": "Testosterone",
       "origin": "imported",
       "match_status": "unmatched",
-      "provenance": []
+      "provenance": [],
+      "weight": 0.25
     },
     {
       "source": "AKR1C3",
       "target": "Testosterone",
       "type": "ACTIVATES",
-      "label": "17\u03b2-reduction",
+      "label": "17β-reduction",
       "carcinogen": "Testosterone",
       "origin": "imported",
       "match_status": "canonical",
       "canonical_predicate": "ACTIVATES",
       "canonical_namespace": "schema",
-      "provenance": []
+      "provenance": [],
+      "weight": 0.3333
     },
     {
       "source": "GSTM1",
@@ -3250,7 +3378,8 @@ const GRAPH_DATA = {
           "evidence": "Glutathione conjugation",
           "citation": "Glutathione conjugation"
         }
-      ]
+      ],
+      "weight": 0.3333
     },
     {
       "source": "GSTM1",
@@ -3262,7 +3391,8 @@ const GRAPH_DATA = {
       "match_status": "canonical",
       "canonical_predicate": "DETOXIFIES",
       "canonical_namespace": "schema",
-      "provenance": []
+      "provenance": [],
+      "weight": 0.3333
     },
     {
       "source": "GSTM1",
@@ -3272,7 +3402,8 @@ const GRAPH_DATA = {
       "carcinogen": "AFB1",
       "origin": "imported",
       "match_status": "unmatched",
-      "provenance": []
+      "provenance": [],
+      "weight": 0.3333
     },
     {
       "source": "GSTM1",
@@ -3281,7 +3412,8 @@ const GRAPH_DATA = {
       "label": "glutathione pathway",
       "origin": "imported",
       "match_status": "unmatched",
-      "provenance": []
+      "provenance": [],
+      "weight": 0.3333
     },
     {
       "source": "GSTT1",
@@ -3291,7 +3423,8 @@ const GRAPH_DATA = {
       "carcinogen": "AFB1",
       "origin": "imported",
       "match_status": "unmatched",
-      "provenance": []
+      "provenance": [],
+      "weight": 0.3333
     },
     {
       "source": "GSTT1",
@@ -3303,7 +3436,8 @@ const GRAPH_DATA = {
       "match_status": "canonical",
       "canonical_predicate": "DETOXIFIES",
       "canonical_namespace": "schema",
-      "provenance": []
+      "provenance": [],
+      "weight": 0.3333
     },
     {
       "source": "GSTT1",
@@ -3315,7 +3449,8 @@ const GRAPH_DATA = {
       "match_status": "canonical",
       "canonical_predicate": "DETOXIFIES",
       "canonical_namespace": "schema",
-      "provenance": []
+      "provenance": [],
+      "weight": 0.3333
     },
     {
       "source": "GSTT1",
@@ -3324,7 +3459,8 @@ const GRAPH_DATA = {
       "label": "glutathione pathway",
       "origin": "imported",
       "match_status": "unmatched",
-      "provenance": []
+      "provenance": [],
+      "weight": 0.3333
     },
     {
       "source": "GSTP1",
@@ -3345,7 +3481,8 @@ const GRAPH_DATA = {
           "evidence": "Glutathione conjugation",
           "citation": "Glutathione conjugation"
         }
-      ]
+      ],
+      "weight": 0.25
     },
     {
       "source": "NAT2",
@@ -3357,7 +3494,8 @@ const GRAPH_DATA = {
       "match_status": "canonical",
       "canonical_predicate": "ACTIVATES",
       "canonical_namespace": "schema",
-      "provenance": []
+      "provenance": [],
+      "weight": 0.3333
     },
     {
       "source": "NAT2",
@@ -3367,7 +3505,8 @@ const GRAPH_DATA = {
       "carcinogen": "PhIP",
       "origin": "imported",
       "match_status": "unmatched",
-      "provenance": []
+      "provenance": [],
+      "weight": 0.3333
     },
     {
       "source": "NAT2",
@@ -3379,7 +3518,8 @@ const GRAPH_DATA = {
       "match_status": "canonical",
       "canonical_predicate": "DETOXIFIES",
       "canonical_namespace": "schema",
-      "provenance": []
+      "provenance": [],
+      "weight": 0.3333
     },
     {
       "source": "NAT1",
@@ -3391,7 +3531,8 @@ const GRAPH_DATA = {
       "match_status": "canonical",
       "canonical_predicate": "ACTIVATES",
       "canonical_namespace": "schema",
-      "provenance": []
+      "provenance": [],
+      "weight": 0.3333
     },
     {
       "source": "SULT1A1",
@@ -3403,7 +3544,8 @@ const GRAPH_DATA = {
       "match_status": "canonical",
       "canonical_predicate": "ACTIVATES",
       "canonical_namespace": "schema",
-      "provenance": []
+      "provenance": [],
+      "weight": 0.3333
     },
     {
       "source": "SULT1A1",
@@ -3415,7 +3557,8 @@ const GRAPH_DATA = {
       "match_status": "canonical",
       "canonical_predicate": "DETOXIFIES",
       "canonical_namespace": "schema",
-      "provenance": []
+      "provenance": [],
+      "weight": 0.3333
     },
     {
       "source": "UGT1A1",
@@ -3425,7 +3568,8 @@ const GRAPH_DATA = {
       "carcinogen": "PhIP",
       "origin": "imported",
       "match_status": "unmatched",
-      "provenance": []
+      "provenance": [],
+      "weight": 0.25
     },
     {
       "source": "UGT1A1",
@@ -3437,7 +3581,8 @@ const GRAPH_DATA = {
       "match_status": "canonical",
       "canonical_predicate": "DETOXIFIES",
       "canonical_namespace": "schema",
-      "provenance": []
+      "provenance": [],
+      "weight": 0.25
     },
     {
       "source": "UGT2B7",
@@ -3449,7 +3594,8 @@ const GRAPH_DATA = {
       "match_status": "canonical",
       "canonical_predicate": "DETOXIFIES",
       "canonical_namespace": "schema",
-      "provenance": []
+      "provenance": [],
+      "weight": 0.3333
     },
     {
       "source": "NQO1",
@@ -3461,7 +3607,8 @@ const GRAPH_DATA = {
       "match_status": "canonical",
       "canonical_predicate": "DETOXIFIES",
       "canonical_namespace": "schema",
-      "provenance": []
+      "provenance": [],
+      "weight": 0.3333
     },
     {
       "source": "NQO1",
@@ -3473,7 +3620,8 @@ const GRAPH_DATA = {
       "match_status": "canonical",
       "canonical_predicate": "DETOXIFIES",
       "canonical_namespace": "schema",
-      "provenance": []
+      "provenance": [],
+      "weight": 0.3333
     },
     {
       "source": "COMT",
@@ -3483,7 +3631,8 @@ const GRAPH_DATA = {
       "carcinogen": "E2",
       "origin": "imported",
       "match_status": "unmatched",
-      "provenance": []
+      "provenance": [],
+      "weight": 0.25
     },
     {
       "source": "UGT2B17",
@@ -3495,7 +3644,8 @@ const GRAPH_DATA = {
       "match_status": "canonical",
       "canonical_predicate": "DETOXIFIES",
       "canonical_namespace": "schema",
-      "provenance": []
+      "provenance": [],
+      "weight": 0.25
     },
     {
       "source": "UGT2B17",
@@ -3516,7 +3666,8 @@ const GRAPH_DATA = {
           "evidence": "Glucuronidation",
           "citation": "Glucuronidation"
         }
-      ]
+      ],
+      "weight": 0.25
     },
     {
       "source": "UGT2B15",
@@ -3526,27 +3677,30 @@ const GRAPH_DATA = {
       "carcinogen": "DHT",
       "origin": "imported",
       "match_status": "unmatched",
-      "provenance": []
+      "provenance": [],
+      "weight": 0.25
     },
     {
       "source": "HSD3B2",
       "target": "Androstenedione",
       "type": "ACTIVATES",
-      "label": "3\u03b2-oxidation",
+      "label": "3β-oxidation",
       "carcinogen": "Testosterone",
       "origin": "imported",
       "match_status": "unmatched",
-      "provenance": []
+      "provenance": [],
+      "weight": 0.25
     },
     {
       "source": "AKR1C2",
       "target": "3aAdiol",
       "type": "DETOXIFIES",
-      "label": "3\u03b1-reduction",
+      "label": "3α-reduction",
       "carcinogen": "DHT",
       "origin": "imported",
       "match_status": "unmatched",
-      "provenance": []
+      "provenance": [],
+      "weight": 0.25
     },
     {
       "source": "ABCB1",
@@ -3557,7 +3711,8 @@ const GRAPH_DATA = {
       "match_status": "canonical",
       "canonical_predicate": "TRANSPORTS",
       "canonical_namespace": "schema",
-      "provenance": []
+      "provenance": [],
+      "weight": 0.3333
     },
     {
       "source": "ABCB1",
@@ -3568,7 +3723,8 @@ const GRAPH_DATA = {
       "match_status": "canonical",
       "canonical_predicate": "TRANSPORTS",
       "canonical_namespace": "schema",
-      "provenance": []
+      "provenance": [],
+      "weight": 0.3333
     },
     {
       "source": "ABCB1",
@@ -3579,7 +3735,8 @@ const GRAPH_DATA = {
       "match_status": "canonical",
       "canonical_predicate": "TRANSPORTS",
       "canonical_namespace": "schema",
-      "provenance": []
+      "provenance": [],
+      "weight": 0.3333
     },
     {
       "source": "ABCC2",
@@ -3590,7 +3747,8 @@ const GRAPH_DATA = {
       "match_status": "canonical",
       "canonical_predicate": "TRANSPORTS",
       "canonical_namespace": "schema",
-      "provenance": []
+      "provenance": [],
+      "weight": 0.25
     },
     {
       "source": "ABCC2",
@@ -3599,7 +3757,8 @@ const GRAPH_DATA = {
       "label": "biliary efflux",
       "origin": "imported",
       "match_status": "unmatched",
-      "provenance": []
+      "provenance": [],
+      "weight": 0.25
     },
     {
       "source": "ABCG2",
@@ -3608,7 +3767,8 @@ const GRAPH_DATA = {
       "label": "efflux",
       "origin": "imported",
       "match_status": "unmatched",
-      "provenance": []
+      "provenance": [],
+      "weight": 0.25
     },
     {
       "source": "ABCG2",
@@ -3619,7 +3779,8 @@ const GRAPH_DATA = {
       "match_status": "canonical",
       "canonical_predicate": "TRANSPORTS",
       "canonical_namespace": "schema",
-      "provenance": []
+      "provenance": [],
+      "weight": 0.25
     },
     {
       "source": "XRCC1",
@@ -3630,7 +3791,8 @@ const GRAPH_DATA = {
       "match_status": "canonical",
       "canonical_predicate": "REPAIRS",
       "canonical_namespace": "schema",
-      "provenance": []
+      "provenance": [],
+      "weight": 0.5
     },
     {
       "source": "XRCC1",
@@ -3641,7 +3803,8 @@ const GRAPH_DATA = {
       "match_status": "canonical",
       "canonical_predicate": "REPAIRS",
       "canonical_namespace": "schema",
-      "provenance": []
+      "provenance": [],
+      "weight": 0.5
     },
     {
       "source": "XRCC1",
@@ -3650,7 +3813,8 @@ const GRAPH_DATA = {
       "label": "BER",
       "origin": "imported",
       "match_status": "unmatched",
-      "provenance": []
+      "provenance": [],
+      "weight": 0.5
     },
     {
       "source": "XRCC1",
@@ -3659,7 +3823,8 @@ const GRAPH_DATA = {
       "label": "BER",
       "origin": "imported",
       "match_status": "unmatched",
-      "provenance": []
+      "provenance": [],
+      "weight": 0.5
     },
     {
       "source": "XPC",
@@ -3670,7 +3835,8 @@ const GRAPH_DATA = {
       "match_status": "canonical",
       "canonical_predicate": "REPAIRS",
       "canonical_namespace": "schema",
-      "provenance": []
+      "provenance": [],
+      "weight": 0.5
     },
     {
       "source": "XPC",
@@ -3681,7 +3847,8 @@ const GRAPH_DATA = {
       "match_status": "canonical",
       "canonical_predicate": "REPAIRS",
       "canonical_namespace": "schema",
-      "provenance": []
+      "provenance": [],
+      "weight": 0.5
     },
     {
       "source": "ERCC2",
@@ -3692,7 +3859,8 @@ const GRAPH_DATA = {
       "match_status": "canonical",
       "canonical_predicate": "REPAIRS",
       "canonical_namespace": "schema",
-      "provenance": []
+      "provenance": [],
+      "weight": 0.5
     },
     {
       "source": "OGG1",
@@ -3703,7 +3871,8 @@ const GRAPH_DATA = {
       "match_status": "canonical",
       "canonical_predicate": "REPAIRS",
       "canonical_namespace": "schema",
-      "provenance": []
+      "provenance": [],
+      "weight": 0.5
     },
     {
       "source": "MGMT",
@@ -3714,7 +3883,104 @@ const GRAPH_DATA = {
       "match_status": "canonical",
       "canonical_predicate": "REPAIRS",
       "canonical_namespace": "schema",
-      "provenance": []
+      "provenance": [],
+      "weight": 0.5
+    },
+    {
+      "source": "MLH1",
+      "target": "BPDE_dG",
+      "type": "REPAIRS",
+      "label": "MMR",
+      "origin": "imported",
+      "match_status": "canonical",
+      "canonical_predicate": "REPAIRS",
+      "canonical_namespace": "schema",
+      "provenance": [],
+      "weight": 0.5
+    },
+    {
+      "source": "MLH1",
+      "target": "PhIP_dG",
+      "type": "REPAIRS",
+      "label": "MMR",
+      "origin": "imported",
+      "match_status": "canonical",
+      "canonical_predicate": "REPAIRS",
+      "canonical_namespace": "schema",
+      "provenance": [],
+      "weight": 0.5
+    },
+    {
+      "source": "MLH1",
+      "target": "ABP_dG",
+      "type": "REPAIRS",
+      "label": "MMR",
+      "origin": "imported",
+      "match_status": "canonical",
+      "canonical_predicate": "REPAIRS",
+      "canonical_namespace": "schema",
+      "provenance": [],
+      "weight": 0.5
+    },
+    {
+      "source": "MLH1",
+      "target": "Oxo_dG",
+      "type": "REPAIRS",
+      "label": "MMR",
+      "origin": "imported",
+      "match_status": "canonical",
+      "canonical_predicate": "REPAIRS",
+      "canonical_namespace": "schema",
+      "provenance": [],
+      "weight": 0.5
+    },
+    {
+      "source": "MSH2",
+      "target": "BPDE_dG",
+      "type": "REPAIRS",
+      "label": "MMR",
+      "origin": "imported",
+      "match_status": "canonical",
+      "canonical_predicate": "REPAIRS",
+      "canonical_namespace": "schema",
+      "provenance": [],
+      "weight": 0.5
+    },
+    {
+      "source": "MSH2",
+      "target": "PhIP_dG",
+      "type": "REPAIRS",
+      "label": "MMR",
+      "origin": "imported",
+      "match_status": "canonical",
+      "canonical_predicate": "REPAIRS",
+      "canonical_namespace": "schema",
+      "provenance": [],
+      "weight": 0.5
+    },
+    {
+      "source": "MSH2",
+      "target": "ABP_dG",
+      "type": "REPAIRS",
+      "label": "MMR",
+      "origin": "imported",
+      "match_status": "canonical",
+      "canonical_predicate": "REPAIRS",
+      "canonical_namespace": "schema",
+      "provenance": [],
+      "weight": 0.5
+    },
+    {
+      "source": "MSH2",
+      "target": "Oxo_dG",
+      "type": "REPAIRS",
+      "label": "MMR",
+      "origin": "imported",
+      "match_status": "canonical",
+      "canonical_predicate": "REPAIRS",
+      "canonical_namespace": "schema",
+      "provenance": [],
+      "weight": 0.5
     },
     {
       "source": "BPDE",
@@ -3725,7 +3991,8 @@ const GRAPH_DATA = {
       "match_status": "canonical",
       "canonical_predicate": "FORMS_ADDUCT",
       "canonical_namespace": "schema",
-      "provenance": []
+      "provenance": [],
+      "weight": 0.5
     },
     {
       "source": "NOH_PhIP",
@@ -3736,7 +4003,8 @@ const GRAPH_DATA = {
       "match_status": "canonical",
       "canonical_predicate": "FORMS_ADDUCT",
       "canonical_namespace": "schema",
-      "provenance": []
+      "provenance": [],
+      "weight": 0.5
     },
     {
       "source": "NOH_4ABP",
@@ -3747,7 +4015,8 @@ const GRAPH_DATA = {
       "match_status": "canonical",
       "canonical_predicate": "FORMS_ADDUCT",
       "canonical_namespace": "schema",
-      "provenance": []
+      "provenance": [],
+      "weight": 0.5
     },
     {
       "source": "NNK_hydroxyl",
@@ -3758,7 +4027,8 @@ const GRAPH_DATA = {
       "match_status": "canonical",
       "canonical_predicate": "FORMS_ADDUCT",
       "canonical_namespace": "schema",
-      "provenance": []
+      "provenance": [],
+      "weight": 0.5
     },
     {
       "source": "NNK_hydroxyl",
@@ -3769,7 +4039,8 @@ const GRAPH_DATA = {
       "match_status": "canonical",
       "canonical_predicate": "FORMS_ADDUCT",
       "canonical_namespace": "schema",
-      "provenance": []
+      "provenance": [],
+      "weight": 0.5
     },
     {
       "source": "AFB1_epoxide",
@@ -3780,7 +4051,8 @@ const GRAPH_DATA = {
       "match_status": "canonical",
       "canonical_predicate": "FORMS_ADDUCT",
       "canonical_namespace": "schema",
-      "provenance": []
+      "provenance": [],
+      "weight": 0.5
     },
     {
       "source": "HydroxyE2",
@@ -3791,7 +4063,8 @@ const GRAPH_DATA = {
       "match_status": "canonical",
       "canonical_predicate": "ACTIVATES",
       "canonical_namespace": "schema",
-      "provenance": []
+      "provenance": [],
+      "weight": 0.3333
     },
     {
       "source": "E2_quinone",
@@ -3800,7 +4073,8 @@ const GRAPH_DATA = {
       "label": "depurinating adduct",
       "origin": "imported",
       "match_status": "unmatched",
-      "provenance": []
+      "provenance": [],
+      "weight": 0.5
     },
     {
       "source": "Benzene_oxide",
@@ -3809,7 +4083,8 @@ const GRAPH_DATA = {
       "label": "rearrangement/hydroxylation",
       "origin": "imported",
       "match_status": "unmatched",
-      "provenance": []
+      "provenance": [],
+      "weight": 0.25
     },
     {
       "source": "HQ",
@@ -3818,7 +4093,8 @@ const GRAPH_DATA = {
       "label": "auto-oxidation",
       "origin": "imported",
       "match_status": "unmatched",
-      "provenance": []
+      "provenance": [],
+      "weight": 0.3333
     },
     {
       "source": "Benzoquinone",
@@ -3827,25 +4103,28 @@ const GRAPH_DATA = {
       "label": "quinone adducts",
       "origin": "imported",
       "match_status": "unmatched",
-      "provenance": []
+      "provenance": [],
+      "weight": 0.5
     },
     {
       "source": "Chloroethylene_oxide",
       "target": "etheno_dA",
       "type": "FORMS_ADDUCT",
-      "label": "\u03b5dA formation",
+      "label": "εdA formation",
       "origin": "imported",
       "match_status": "unmatched",
-      "provenance": []
+      "provenance": [],
+      "weight": 0.5
     },
     {
       "source": "Chloroethylene_oxide",
       "target": "etheno_dC",
       "type": "FORMS_ADDUCT",
-      "label": "\u03b5dC formation",
+      "label": "εdC formation",
       "origin": "imported",
       "match_status": "unmatched",
-      "provenance": []
+      "provenance": [],
+      "weight": 0.5
     },
     {
       "source": "NDMA_hydroxyl",
@@ -3856,16 +4135,18 @@ const GRAPH_DATA = {
       "match_status": "canonical",
       "canonical_predicate": "FORMS_ADDUCT",
       "canonical_namespace": "schema",
-      "provenance": []
+      "provenance": [],
+      "weight": 0.5
     },
     {
       "source": "E2_from_T",
       "target": "HydroxyE2",
       "type": "ACTIVATES",
-      "label": "CYP1B1 \u2192 catechol",
+      "label": "CYP1B1 → catechol",
       "origin": "imported",
       "match_status": "unmatched",
-      "provenance": []
+      "provenance": [],
+      "weight": 0.5
     },
     {
       "source": "E2_from_T",
@@ -3874,7 +4155,8 @@ const GRAPH_DATA = {
       "label": "via quinone pathway",
       "origin": "imported",
       "match_status": "unmatched",
-      "provenance": []
+      "provenance": [],
+      "weight": 0.5
     }
   ]
 };

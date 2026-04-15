@@ -78,7 +78,7 @@ class _PanelEdge:
     rad: float = 0.0
     label_offset: tuple[float, float] = (0.0, 0.0)
     alpha: float = 0.94
-    linewidth: float = 2.1
+    linewidth: float = 2.6
 
 
 @dataclass(frozen=True)
@@ -179,14 +179,14 @@ def _panel_specs() -> tuple[_PanelSpec, ...]:
                 _PanelItem("epoxide", "BaP-7,8-epoxide", "Reactive intermediate", "Metabolite", 50, 63, 24, 8, ("BaP_epoxide",)),
                 _PanelItem("ephx1", "EPHX1", "Epoxide hydrolase", "Enzyme", 17, 53, 14, 7, ("EPHX1",)),
                 _PanelItem("diol", "BaP-7,8-dihydrodiol", "Proximate carcinogen", "Metabolite", 50, 45, 28, 8, ("BaP_diol",)),
-                _PanelItem("bpde", "BPDE", "Ultimate carcinogen", "Metabolite", 50, 27, 19, 8, ("BPDE",)),
+                _PanelItem("bpde", "BPDE", "Benzo[a]pyrene-7,8-diol-\n9,10-epoxide", "Metabolite", 50, 27, 19, 8, ("BPDE",)),
                 _PanelItem("gstm", "GSTM1 / GSTP1", "GSH conjugation", "Enzyme", 84, 33, 18, 7, ("GSTM1", "GSTP1")),
                 _PanelItem("gsh", "BPDE-GSH", "Detoxified conjugate", "Metabolite", 84, 18, 18, 8, ("BPDE_GSH",)),
                 _PanelItem("adduct", "BPDE-dG Adduct", "N2-guanine lesion", "DNA_Adduct", 50, 10, 22, 8, ("BPDE_dG",)),
                 _PanelItem(
                     "risk",
                     "Variant context",
-                    _wrap("CYP1A1 high-activity and GSTM1-null interaction tracked as research-use risk context.", 28),
+                    _wrap("CYP1A1 high-activity and GSTM1-null are illustrative biological examples of variant context, not patient-specific clinical claims.", 28),
                     "Note",
                     84,
                     52,
@@ -225,7 +225,7 @@ def _panel_specs() -> tuple[_PanelSpec, ...]:
                 _PanelItem(
                     "risk",
                     "Risk context",
-                    _wrap("NAT2 slow-acetylator phenotypes are retained in ExposoGraph activity-score metadata.", 28),
+                    _wrap("NAT2 slow-acetylator phenotypes are illustrative examples retained in ExposoGraph activity-score metadata, not patient-specific claims.", 28),
                     "Note",
                     78,
                     9,
@@ -472,7 +472,7 @@ def render_exemplar_pathways_figure(
             item.label,
             ha="center",
             va="center",
-            fontsize=8.0 if item.kind != "Note" else 7.5,
+            fontsize=9.0 if item.kind != "Note" else 8.0,
             fontweight="bold",
             color=text,
             linespacing=1.0,
@@ -513,7 +513,7 @@ def render_exemplar_pathways_figure(
                 edge.label,
                 ha="center",
                 va="center",
-                fontsize=6.2,
+                fontsize=7.2,
                 color=color,
                 fontweight="bold",
                 bbox=dict(boxstyle="round,pad=0.18", facecolor="white", edgecolor="none", alpha=0.92),
@@ -545,6 +545,192 @@ def render_exemplar_pathways_figure(
             draw_edge(ax, item_by_key, edge)
 
     fig.subplots_adjust(left=0.04, right=0.98, top=0.93, bottom=0.05, wspace=0.08, hspace=0.14)
+
+    saved_paths: dict[str, Path] = {}
+    if output_dir is not None:
+        output_path = Path(output_dir)
+        output_path.mkdir(parents=True, exist_ok=True)
+        for fmt in formats:
+            path = output_path / f"{stem}.{fmt}"
+            fig.savefig(path, dpi=dpi, bbox_inches="tight", facecolor=fig.get_facecolor())
+            saved_paths[str(fmt)] = path
+
+    return fig, saved_paths
+
+
+_GENOTYPE_PROFILES: dict[str, dict[str, float]] = {
+    "baseline": {},
+    "bap_high_risk": {"cyp11": 1.3, "gstm": 0.0},
+    "abp_reduced_detox": {"nat2": 0.5, "gstm1": 0.0},
+    "afb1_reduced_detox_repair": {"gstm": 0.0, "xpc": 0.5},
+}
+
+_COMPARISON_PROFILE_SETS: dict[str, tuple[tuple[str, str], ...]] = {
+    "A": (
+        ("Baseline (Normal Activity)", "baseline"),
+        ("CYP1A1*2B / GSTM1-null (High Risk)", "bap_high_risk"),
+    ),
+    "B": (
+        ("Baseline (Normal Activity)", "baseline"),
+        ("Reduced Detoxification Context", "abp_reduced_detox"),
+    ),
+    "D": (
+        ("Baseline (Normal Activity)", "baseline"),
+        ("Reduced Detoxification / Repair Context", "afb1_reduced_detox_repair"),
+    ),
+}
+
+
+def _resolve_panel_spec(panel_selector: int | str) -> _PanelSpec:
+    panels = _panel_specs()
+    if isinstance(panel_selector, int):
+        try:
+            return panels[panel_selector]
+        except IndexError as exc:
+            raise ValueError(f"Unknown panel index {panel_selector!r}.") from exc
+
+    cleaned = str(panel_selector).strip().upper()
+    for panel in panels:
+        if panel.letter.upper() == cleaned:
+            return panel
+    raise ValueError(f"Unknown panel selector {panel_selector!r}.")
+
+
+def render_genotype_comparison_figure(
+    *,
+    output_dir: str | Path | None = None,
+    stem: str = "genotype_comparison_figure",
+    panel_selector: int | str = "A",
+    profiles: Sequence[tuple[str, str]] | None = None,
+    figsize: tuple[float, float] = (15.0, 6.5),
+    dpi: int = 300,
+    formats: Sequence[str] = ("png", "svg", "pdf"),
+) -> tuple[Any, dict[str, Path]]:
+    """Render a side-by-side baseline-vs-context comparison for a selected panel."""
+    plt, FancyArrowPatch, FancyBboxPatch = _require_matplotlib()
+    fig, axes = plt.subplots(1, 2, figsize=figsize, dpi=dpi)
+    fig.patch.set_facecolor("#f7f9fc")
+
+    panel = _resolve_panel_spec(panel_selector)
+    panel_profiles = tuple(profiles or _COMPARISON_PROFILE_SETS.get(panel.letter, ()))
+    if len(panel_profiles) != 2:
+        raise ValueError(
+            "render_genotype_comparison_figure() requires exactly two profiles "
+            f"for panel {panel.letter}."
+        )
+
+    def visual_state_for_score(score: float) -> tuple[str, float, float]:
+        if score == 0.0:
+            return ("#b9c1cb", 2.1, 0.42)
+        if score > 1.0:
+            return ("#e05565", 2.6, 1.0)
+        if score < 1.0:
+            return ("#6daa45", 2.2, 0.72)
+        return ("#08111f", 1.2, 0.9)
+
+    def add_box(ax: Any, item: _PanelItem, activity_overrides: dict[str, float]) -> None:
+        face, edge, text = _style_for_item(item)
+        rounding = min(item.height / 2.2, 3.8)
+        if item.kind in {"Enzyme", "Gene"}:
+            rounding = min(item.height / 1.5, 4.4)
+        if item.kind == "Pathway":
+            rounding = 2.4
+        linewidth = 1.2
+        alpha = item.alpha
+        if item.kind != "Note" and item.key in activity_overrides:
+            override_edge, linewidth, alpha = visual_state_for_score(activity_overrides[item.key])
+        patch = FancyBboxPatch(
+            (item.x - item.width / 2.0, item.y - item.height / 2.0),
+            item.width,
+            item.height,
+            boxstyle=f"round,pad=0.35,rounding_size={rounding}",
+            facecolor=face,
+            edgecolor=edge,
+            linewidth=linewidth,
+            alpha=alpha,
+        )
+        if item.kind != "Note" and item.key in activity_overrides:
+            patch.set_edgecolor(override_edge)
+        ax.add_patch(patch)
+        if item.kind == "Note":
+            note_top = item.y + (item.height / 2.0) - 0.9
+            ax.text(item.x, note_top, item.label, ha="center", va="top",
+                    fontsize=7.2, fontweight="bold", color=text, linespacing=1.0)
+            if item.subtitle:
+                ax.text(item.x, note_top - 3.7, item.subtitle, ha="center", va="top",
+                        fontsize=5.5, color=text, linespacing=1.05)
+            return
+        label_y = item.y + (0.9 if item.subtitle else 0.0)
+        ax.text(item.x, label_y, item.label, ha="center", va="center",
+                fontsize=9.0, fontweight="bold", color=text, linespacing=1.0)
+        if item.subtitle:
+            ax.text(item.x, item.y - 1.9, item.subtitle, ha="center", va="center",
+                    fontsize=5.8, color="#f4f7fb", linespacing=1.05)
+
+    def draw_edge(ax: Any, item_by_key: dict[str, _PanelItem], edge: _PanelEdge,
+                  activity_overrides: dict[str, float]) -> None:
+        source = item_by_key[edge.source]
+        target = item_by_key[edge.target]
+        color = _EDGE_COLORS[edge.relation]
+        # Scale linewidth by source activity score if override exists
+        lw = edge.linewidth
+        source_activity = activity_overrides.get(edge.source)
+        if source_activity is not None and edge.relation in {"ACTIVATES", "DETOXIFIES", "REPAIRS"}:
+            lw = max(0.8, edge.linewidth * source_activity)
+            if source_activity == 0.0:
+                color = "#c0c0c0"  # dim absent enzyme edges
+            elif source_activity < 1.0:
+                color = "#7f8f9d" if edge.relation == "DETOXIFIES" else color
+        patch = FancyArrowPatch(
+            _anchor(source, target),
+            _anchor(target, source),
+            arrowstyle="-|>",
+            mutation_scale=12.0,
+            linewidth=lw,
+            linestyle=_EDGE_STYLES[edge.relation],
+            color=color,
+            connectionstyle=f"arc3,rad={edge.rad}",
+            alpha=(
+                0.28 if source_activity == 0.0
+                else min(0.98, edge.alpha + 0.06) if source_activity and source_activity > 1.0
+                else 0.46 if source_activity and source_activity < 1.0
+                else edge.alpha
+            ),
+        )
+        ax.add_patch(patch)
+        if edge.label:
+            ax.text(
+                (source.x + target.x) / 2.0 + edge.label_offset[0],
+                (source.y + target.y) / 2.0 + edge.label_offset[1],
+                edge.label, ha="center", va="center", fontsize=7.2, color=color,
+                fontweight="bold",
+                bbox=dict(boxstyle="round,pad=0.18", facecolor="white", edgecolor="none", alpha=0.92),
+            )
+
+    for ax, (subtitle, profile_key) in zip(axes.flat, panel_profiles):
+        overrides = _GENOTYPE_PROFILES.get(profile_key, {})
+        ax.set_xlim(0, 100)
+        ax.set_ylim(0, 100)
+        ax.axis("off")
+        ax.set_facecolor("#f7f9fc")
+        panel_bg = FancyBboxPatch(
+            (1.0, 1.5), 98.0, 95.0,
+            boxstyle="round,pad=0.9,rounding_size=4.5",
+            facecolor="white", edgecolor="#dde6ef", linewidth=1.0,
+        )
+        ax.add_patch(panel_bg)
+        ax.text(50, 94.6, subtitle, fontsize=10.0, fontweight="bold",
+                color="#33475b", ha="center", va="center")
+
+        # Filter out the "risk" note item for cleaner comparison
+        items = tuple(item for item in panel.items if item.key != "risk")
+        item_by_key = {item.key: item for item in items}
+        for item in items:
+            add_box(ax, item, overrides)
+        for edge in panel.edges:
+            draw_edge(ax, item_by_key, edge, overrides)
+
+    fig.subplots_adjust(left=0.03, right=0.97, top=0.90, bottom=0.05, wspace=0.08)
 
     saved_paths: dict[str, Path] = {}
     if output_dir is not None:

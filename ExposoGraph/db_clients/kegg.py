@@ -70,6 +70,23 @@ class KEGGClient:
         resp.raise_for_status()
         return str(resp.text)
 
+    @staticmethod
+    def _field_body(line: str) -> str:
+        """Return the content area of a KEGG fixed-width record line."""
+        return line[12:].strip() if len(line) > 12 else ""
+
+    @staticmethod
+    def _parse_pathway_gene(body: str) -> str | None:
+        """Extract the gene symbol from a KEGG pathway GENE line."""
+        if not body:
+            return None
+        parts = body.split(None, 2)
+        if not parts:
+            return None
+        if parts[0].isdigit():
+            return parts[1].rstrip(";") if len(parts) > 1 else None
+        return parts[0].rstrip(";")
+
     def get_pathway(self, pathway_id: str) -> KEGGPathway:
         """Fetch pathway details including member genes.
 
@@ -86,16 +103,16 @@ class KEGGClient:
 
         for line in text.splitlines():
             if line.startswith("NAME"):
-                name = line.split(None, 1)[1].strip() if len(line.split(None, 1)) > 1 else ""
+                name = self._field_body(line)
             elif line.startswith("GENE"):
                 in_gene_section = True
-                parts = line.split(None, 1)[1].strip().split(None, 1) if len(line.split(None, 1)) > 1 else []
-                if parts:
-                    genes.append(parts[0])
+                gene_symbol = self._parse_pathway_gene(self._field_body(line))
+                if gene_symbol:
+                    genes.append(gene_symbol)
             elif in_gene_section and line.startswith("            "):
-                parts = line.strip().split(None, 1)
-                if parts and parts[0].isdigit() is False:
-                    genes.append(parts[0])
+                gene_symbol = self._parse_pathway_gene(self._field_body(line))
+                if gene_symbol:
+                    genes.append(gene_symbol)
             elif in_gene_section and not line.startswith(" "):
                 in_gene_section = False
 
@@ -113,16 +130,24 @@ class KEGGClient:
         symbol = ""
         name = ""
         pathways: list[str] = []
+        in_pathway_section = False
 
         for line in text.splitlines():
             if line.startswith("SYMBOL"):
-                symbol = line.split(None, 1)[1].strip() if len(line.split(None, 1)) > 1 else ""
+                symbol = self._field_body(line)
             elif line.startswith("NAME"):
-                name = line.split(None, 1)[1].strip() if len(line.split(None, 1)) > 1 else ""
+                name = self._field_body(line)
             elif line.startswith("PATHWAY"):
-                parts = line.split(None, 1)[1].strip().split(None, 1) if len(line.split(None, 1)) > 1 else []
-                if parts:
-                    pathways.append(parts[0])
+                in_pathway_section = True
+                body = self._field_body(line)
+                if body:
+                    pathways.append(body.split(None, 1)[0])
+            elif in_pathway_section and line.startswith("            "):
+                body = self._field_body(line)
+                if body:
+                    pathways.append(body.split(None, 1)[0])
+            elif in_pathway_section and not line.startswith(" "):
+                in_pathway_section = False
 
         return KEGGGene(gene_id=gene_id, symbol=symbol, name=name, pathways=pathways)
 

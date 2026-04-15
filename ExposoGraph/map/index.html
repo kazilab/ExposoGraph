@@ -148,11 +148,18 @@ body {
   transition: opacity 0.15s;
 }
 .legend-item:hover { opacity: 0.7; }
-.legend-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
+.legend-icon {
+  width: 14px;
+  height: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   flex-shrink: 0;
+}
+.legend-icon svg {
+  width: 14px;
+  height: 14px;
+  overflow: visible;
 }
 .legend-count {
   margin-left: auto;
@@ -172,10 +179,13 @@ body {
 }
 .edge-line {
   width: 28px;
-  height: 2px;
+  height: 0;
   border-radius: 1px;
   flex-shrink: 0;
+  border-top: 2px solid currentColor;
 }
+.edge-line.dashed { border-top-style: dashed; }
+.edge-line.dotted { border-top-style: dotted; border-top-width: 2.5px; }
 
 /* Search */
 .search-box {
@@ -221,6 +231,38 @@ body {
   background: var(--teal);
   border-color: var(--teal);
   color: white;
+}
+
+/* ── Genotype Selector ────────────────────────────────────────── */
+.genotype-select {
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 12px;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+.genotype-select:hover { border-color: var(--teal-light); }
+.genotype-select:focus { outline: none; border-color: var(--teal); }
+.genotype-hint {
+  font-size: 10px;
+  color: var(--text-faint);
+  margin-top: 4px;
+  line-height: 1.4;
+}
+.genotype-feedback {
+  margin-top: 8px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  font-size: 11px;
+  color: var(--text-muted);
+  line-height: 1.45;
 }
 
 /* ── Detail Panel ─────────────────────────────────────────────── */
@@ -423,6 +465,21 @@ body {
       </div>
     </div>
 
+    <!-- Genotype Profile -->
+    <div class="panel">
+      <div class="panel-header">Genotype Profile</div>
+      <div class="panel-body">
+        <select id="genotype-select" class="genotype-select">
+          <option value="normal">Normal (baseline)</option>
+          <option value="bap_high_risk">BaP high-risk (CYP1A1*2B + GSTM1-null)</option>
+          <option value="nat2_slow">NAT2 slow acetylator</option>
+          <option value="cyp2e1_high">CYP2E1 high activity</option>
+        </select>
+        <div class="genotype-hint">Node borders, edge contrast, and line width update to reflect the selected genotype context.</div>
+        <div id="genotype-feedback" class="genotype-feedback">Baseline profile: no genotype overrides applied.</div>
+      </div>
+    </div>
+
     <!-- Detail Panel -->
     <div class="panel detail-panel" id="detail-panel">
       <div class="panel-header">Node Details</div>
@@ -479,6 +536,8 @@ const EDGE_COLORS = {
   REPAIRS: "#e8af34",
   PATHWAY: "#555b6a",
   EXPRESSED_IN: "#c2855a",
+  INDUCES: "#d4a843",
+  INHIBITS: "#8b4a6b",
   ENCODES: "#3d8b8b",
   CUSTOM: "#9ea9bd"
 };
@@ -491,6 +550,8 @@ const EDGE_LABELS = {
   REPAIRS: "Repairs (DNA damage removal)",
   PATHWAY: "Pathway membership",
   EXPRESSED_IN: "Expressed in (gene → tissue)",
+  INDUCES: "Induces (expression or activity upregulation)",
+  INHIBITS: "Inhibits (expression or activity downregulation)",
   ENCODES: "Encodes (variant locus → gene or enzyme)",
   CUSTOM: "Custom curated relation"
 };
@@ -520,13 +581,56 @@ document.getElementById("edge-count").textContent = edges.length;
 
 // ── Build Legends ────────────────────────────────────────────────────
 const nodeLegend = document.getElementById("node-legend");
+function nodeLegendGlyph(type, color) {
+  const fill = `${color}cc`;
+  const stroke = `${color}`;
+
+  if (type === "Carcinogen") {
+    return `<span class="legend-icon" aria-hidden="true">
+      <svg viewBox="0 0 16 16">
+        <polygon points="8,1 14,8 8,15 2,8" fill="${fill}" stroke="${stroke}" stroke-width="1.4"></polygon>
+      </svg>
+    </span>`;
+  }
+
+  if (type === "DNA_Adduct") {
+    return `<span class="legend-icon" aria-hidden="true">
+      <svg viewBox="0 0 16 16">
+        <polygon points="8,1.5 13.2,4.75 13.2,11.25 8,14.5 2.8,11.25 2.8,4.75" fill="${fill}" stroke="${stroke}" stroke-width="1.3"></polygon>
+      </svg>
+    </span>`;
+  }
+
+  if (type === "Pathway") {
+    return `<span class="legend-icon" aria-hidden="true">
+      <svg viewBox="0 0 16 16">
+        <rect x="1.5" y="3" width="13" height="10" rx="2.5" fill="${color}80" stroke="${stroke}" stroke-width="1.2"></rect>
+      </svg>
+    </span>`;
+  }
+
+  if (type === "Tissue") {
+    return `<span class="legend-icon" aria-hidden="true">
+      <svg viewBox="0 0 16 16">
+        <rect x="1.25" y="3.25" width="13.5" height="9.5" rx="4.75" fill="${color}b8" stroke="${stroke}" stroke-width="1.2"></rect>
+      </svg>
+    </span>`;
+  }
+
+  return `<span class="legend-icon" aria-hidden="true">
+    <svg viewBox="0 0 16 16">
+      <circle cx="8" cy="8" r="5.25" fill="${fill}" stroke="${stroke}" stroke-width="1.2"></circle>
+    </svg>
+  </span>`;
+}
+
 Object.entries(NODE_COLORS).forEach(([type, color]) => {
   const count = nodes.filter(n => n.type === type).length;
   if (count === 0) return;
   const item = document.createElement("div");
   item.className = "legend-item";
   item.dataset.type = type;
-  item.innerHTML = `<span class="legend-dot" style="background:${color}"></span>
+  item.innerHTML = `${nodeLegendGlyph(type, color)}
     <span>${NODE_LABELS[type]}</span>
     <span class="legend-count">${count}</span>`;
   item.addEventListener("click", () => highlightType(type));
@@ -534,12 +638,14 @@ Object.entries(NODE_COLORS).forEach(([type, color]) => {
 });
 
 const edgeLegend = document.getElementById("edge-legend");
+const EDGE_LINE_STYLES = { DETOXIFIES: "dashed", REPAIRS: "dotted", INHIBITS: "dashed" };
 Object.entries(EDGE_COLORS).forEach(([type, color]) => {
   const count = edges.filter(e => e.type === type).length;
-  if (count === 0) return;
+  if (count === 0 && !["INDUCES", "INHIBITS"].includes(type)) return;
+  const lineClass = "edge-line" + (EDGE_LINE_STYLES[type] ? ` ${EDGE_LINE_STYLES[type]}` : "");
   const item = document.createElement("div");
   item.className = "edge-legend-item";
-  item.innerHTML = `<span class="edge-line" style="background:${color}"></span>
+  item.innerHTML = `<span class="${lineClass}" style="color:${color}"></span>
     <span>${EDGE_LABELS[type]}</span>
     <span class="legend-count" style="margin-left:auto">${count}</span>`;
   edgeLegend.appendChild(item);
@@ -575,21 +681,38 @@ svg.call(zoom);
 // Arrow markers
 const defs = svg.append("defs");
 Object.entries(EDGE_COLORS).forEach(([type, color]) => {
-  defs.append("marker")
+  const marker = defs.append("marker")
     .attr("id", `arrow-${type}`)
     .attr("viewBox", "0 -5 10 10")
-    .attr("refX", 20)
+    .attr("refX", type === "INHIBITS" ? 12 : 20)
     .attr("refY", 0)
-    .attr("markerWidth", 5)
-    .attr("markerHeight", 5)
-    .attr("orient", "auto")
-    .append("path")
+    .attr("markerWidth", type === "INHIBITS" ? 6 : 5)
+    .attr("markerHeight", type === "INHIBITS" ? 6 : 5)
+    .attr("orient", "auto");
+
+  if (type === "INHIBITS") {
+    marker.append("path")
+      .attr("d", "M8,-4L8,4")
+      .attr("fill", "none")
+      .attr("stroke", color)
+      .attr("stroke-width", 2.1)
+      .attr("stroke-linecap", "round")
+      .attr("opacity", 0.8);
+    return;
+  }
+
+  marker.append("path")
     .attr("d", "M0,-4L10,0L0,4")
     .attr("fill", color)
     .attr("opacity", 0.7);
 });
 
 // Links
+const EDGE_DASHARRAYS = {
+  DETOXIFIES: "6,3",
+  REPAIRS: "2,3",
+  INHIBITS: "4,3"
+};
 const link = g.append("g")
   .selectAll("line")
   .data(edges)
@@ -597,6 +720,7 @@ const link = g.append("g")
   .attr("stroke", d => EDGE_COLORS[d.type] || "#555")
   .attr("stroke-width", d => d.type === "PATHWAY" ? 0.8 : 1.2)
   .attr("stroke-opacity", d => d.type === "PATHWAY" ? 0.25 : 0.45)
+  .attr("stroke-dasharray", d => EDGE_DASHARRAYS[d.type] || null)
   .attr("marker-end", d => d.type !== "PATHWAY" ? `url(#arrow-${d.type})` : null);
 
 // Nodes
@@ -681,7 +805,7 @@ node.append("text")
   .attr("font-size", d => d.type === "Carcinogen" ? "10px" : d.type === "Pathway" ? "7px" : "8px")
   .attr("font-weight", d => d.type === "Carcinogen" ? "600" : "400")
   .attr("font-family", "Inter, sans-serif")
-  .attr("fill", "green")
+  .attr("fill", "#33475b")
   .attr("text-anchor", "middle")
   .attr("dy", d => (NODE_SIZES[d.type] || 7) + 12)
   .attr("paint-order", "stroke")
@@ -691,9 +815,11 @@ node.append("text")
 // ── Simulation ───────────────────────────────────────────────────────
 const simulation = d3.forceSimulation(nodes)
   .force("link", d3.forceLink(edges).id(d => d.id).distance(d => {
+    // Topology-based distance: w = 1/(1+hop_count) is pre-computed per edge.
+    // Higher weight → closer to a DNA-adduct endpoint → shorter layout distance.
     if (d.type === "PATHWAY") return 160;
-    if (d.type === "FORMS_ADDUCT") return 80;
-    return 100;
+    const w = d.weight || 0.25;
+    return Math.round(50 / w);  // w=0.5→100, w=0.33→150, w=0.25→200
   }).strength(d => d.type === "PATHWAY" ? 0.1 : 0.4))
   .force("charge", d3.forceManyBody().strength(d => {
     if (d.type === "Carcinogen") return -400;
@@ -790,8 +916,9 @@ node.on("mouseover", (event, d) => {
 .on("mouseout", () => {
   tooltip.classList.remove("visible");
   node.style("opacity", 1);
-  link.style("stroke-opacity", d => d.type === "PATHWAY" ? 0.25 : 0.45)
-    .style("stroke-width", d => d.type === "PATHWAY" ? 0.8 : 1.2);
+  link.style("stroke-opacity", d => d.type === "PATHWAY" ? 0.25 : 0.45);
+  // Re-apply genotype-aware widths on mouseout
+  applyGenotypeProfile(activeGenotype);
 });
 
 // ── Click for Details ────────────────────────────────────────────────
@@ -937,8 +1064,8 @@ function filterByCarcinogen(group) {
   if (!group) {
     document.querySelector(".filter-btn").classList.add("active");
     node.style("opacity", 1);
-    link.style("stroke-opacity", d => d.type === "PATHWAY" ? 0.25 : 0.45)
-      .style("stroke-width", d => d.type === "PATHWAY" ? 0.8 : 1.2);
+    link.style("stroke-opacity", d => d.type === "PATHWAY" ? 0.25 : 0.45);
+    applyGenotypeProfile(activeGenotype);
     return;
   }
 
@@ -980,6 +1107,154 @@ function filterByCarcinogen(group) {
   link.style("stroke-opacity", (d, i) => relevantEdgeIds.has(i) ? 0.7 : 0.02)
     .style("stroke-width", (d, i) => relevantEdgeIds.has(i) ? 2 : 0.3);
 }
+
+// ── Genotype Profile ─────────────────────────────────────────────
+const GENOTYPE_PROFILES = {
+  normal: {},
+  bap_high_risk: { CYP1A1: 1.3, GSTM1: 0.0 },
+  nat2_slow: { NAT2: 0.5 },
+  cyp2e1_high: { CYP2E1: 1.3 }
+};
+
+const GENOTYPE_MESSAGES = {
+  normal: "Baseline profile: no genotype overrides applied.",
+  bap_high_risk: "BaP high-risk: CYP1A1 activation edges become bolder and GSTM1 detoxification edges fade toward an absent-function state.",
+  nat2_slow: "NAT2 slow acetylator: NAT2-linked activation and detoxification edges are dimmed to indicate reduced catalytic capacity.",
+  cyp2e1_high: "CYP2E1 high activity: CYP2E1-driven activation edges become bolder to emphasize stronger bioactivation context."
+};
+
+const ACTIVITY_EDGE_TYPES = new Set(["ACTIVATES", "DETOXIFIES", "REPAIRS"]);
+const BASE_EDGE_WIDTH = 1.2;
+
+function defaultNodeFillOpacity(type) {
+  if (type === "Enzyme") return 0.85;
+  if (type === "Gene") return 0.78;
+  if (type === "Pathway") return 0.5;
+  if (type === "Tissue") return 0.72;
+  return 0.7;
+}
+
+function activityIndicator(score) {
+  // Mirrors _activity_indicator() in cytoscape_adapter.py
+  if (score == null) return { color: "#08111f", width: 1.5 };
+  const deviation = Math.abs(score - 1.0);
+  const bw = Math.max(1.5, Math.min(4, 1.5 + deviation * 4));
+  if (score > 1.0) return { color: "#e05565", width: bw };  // red = increased risk
+  if (score < 1.0) return { color: "#6daa45", width: bw };  // green = reduced activity
+  return { color: "#08111f", width: 1.5 };
+}
+
+function activityVisualStyle(score, edgeType, defaultColor) {
+  if (score == null || !ACTIVITY_EDGE_TYPES.has(edgeType)) {
+    return {
+      stroke: defaultColor,
+      width: BASE_EDGE_WIDTH,
+      opacity: 0.45,
+      markerEnd: `url(#arrow-${edgeType})`
+    };
+  }
+
+  if (score === 0.0) {
+    return {
+      stroke: "#b9c1cb",
+      width: 0.55,
+      opacity: 0.12,
+      markerEnd: null
+    };
+  }
+
+  if (score > 1.0) {
+    return {
+      stroke: defaultColor,
+      width: Math.max(2.4, Math.min(5, BASE_EDGE_WIDTH * (1 + (score - 1.0) * 4))),
+      opacity: 0.96,
+      markerEnd: `url(#arrow-${edgeType})`
+    };
+  }
+
+  return {
+    stroke: defaultColor,
+    width: Math.max(0.7, BASE_EDGE_WIDTH * score),
+    opacity: 0.18,
+    markerEnd: `url(#arrow-${edgeType})`
+  };
+}
+
+let activeGenotype = "normal";
+
+function applyGenotypeProfile(profileKey) {
+  activeGenotype = profileKey;
+  const overrides = GENOTYPE_PROFILES[profileKey] || {};
+  const hasOverrides = Object.keys(overrides).length > 0;
+  const feedback = document.getElementById("genotype-feedback");
+  if (feedback) {
+    feedback.textContent = GENOTYPE_MESSAGES[profileKey] || GENOTYPE_MESSAGES.normal;
+  }
+
+  // Update node borders
+  node.each(function(d) {
+    const el = d3.select(this);
+    const shape = el.select("circle, polygon, rect");
+    if (!shape.empty()) {
+      if (hasOverrides && overrides[d.id] !== undefined) {
+        const ind = activityIndicator(overrides[d.id]);
+        const score = overrides[d.id];
+        const fillOpacity = score === 0.0
+          ? 0.18
+          : score > 1.0
+            ? 1.0
+            : 0.5;
+        shape.attr("stroke", ind.color)
+             .attr("stroke-width", ind.width)
+             .attr("stroke-opacity", 1.0)
+             .attr("fill-opacity", fillOpacity);
+      } else {
+        // Reset to default
+        const color = NODE_COLORS[d.type] || "#888";
+        shape.attr("stroke", color)
+             .attr("stroke-width", 1.5)
+             .attr("stroke-opacity", 0.4)
+             .attr("fill-opacity", defaultNodeFillOpacity(d.type));
+      }
+    }
+  });
+
+  // Update edge emphasis
+  link.each(function(d) {
+    const edge = d3.select(this);
+    const edgeType = d.type;
+    const defaultColor = EDGE_COLORS[edgeType] || "#555";
+
+    if (edgeType === "PATHWAY") {
+      edge.attr("stroke", defaultColor)
+          .attr("stroke-width", 0.8)
+          .attr("stroke-opacity", 0.25)
+          .attr("marker-end", null);
+      return;
+    }
+
+    if (!hasOverrides) {
+      edge.attr("stroke", defaultColor)
+          .attr("stroke-width", BASE_EDGE_WIDTH)
+          .attr("stroke-opacity", 0.45)
+          .attr("marker-end", `url(#arrow-${edgeType})`);
+      return;
+    }
+
+    const sid = typeof d.source === "object" ? d.source.id : d.source;
+    const score = overrides[sid];
+    const style = activityVisualStyle(score, edgeType, defaultColor);
+    edge.attr("stroke", style.stroke)
+        .attr("stroke-width", style.width)
+        .attr("stroke-opacity", style.opacity)
+        .attr("marker-end", style.markerEnd);
+  });
+}
+
+// Bind to dropdown
+document.getElementById("genotype-select").addEventListener("change", function() {
+  applyGenotypeProfile(this.value);
+});
 
 // ── Zoom Controls ────────────────────────────────────────────────────
 document.getElementById("zoom-in").addEventListener("click", () => {

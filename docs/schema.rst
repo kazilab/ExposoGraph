@@ -129,6 +129,9 @@ Nodes and edges also support a lightweight grounding layer:
 - ``canonical_predicate`` / ``canonical_namespace`` — canonical mapping for grounded edges
 - ``custom_type`` / ``custom_predicate`` — exploratory labels for intentionally user-defined content
 
+``CUSTOM`` nodes must include ``custom_type`` and ``CUSTOM`` edges must include
+``custom_predicate``.
+
 This metadata is orthogonal to curation. A node may be canonical but still in
 ``Draft`` curation status, or custom but manually reviewed.
 

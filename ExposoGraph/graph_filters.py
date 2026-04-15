@@ -40,19 +40,32 @@ def filter_knowledge_graph(
     )
 
     if normalized == GraphVisibility.ALL:
-        return KnowledgeGraph(nodes=list(graph.nodes), edges=list(graph.edges))
+        return KnowledgeGraph(
+            nodes=[node.model_copy(deep=True) for node in graph.nodes],
+            edges=[edge.model_copy(deep=True) for edge in graph.edges],
+        )
 
     if normalized == GraphVisibility.VALIDATED_ONLY:
-        keep_node = lambda node: node.match_status in _VALIDATED_MATCH_STATUSES
-        keep_edge = lambda edge: edge.match_status in _VALIDATED_MATCH_STATUSES
-    else:
-        keep_node = lambda node: node.match_status not in _VALIDATED_MATCH_STATUSES
-        keep_edge = lambda edge: edge.match_status not in _VALIDATED_MATCH_STATUSES
+        def keep_node(node: Node) -> bool:
+            return node.match_status in _VALIDATED_MATCH_STATUSES
 
-    nodes: list[Node] = [node for node in graph.nodes if keep_node(node)]
+        def keep_edge(edge: Edge) -> bool:
+            return edge.match_status in _VALIDATED_MATCH_STATUSES
+    else:
+        def keep_node(node: Node) -> bool:
+            return node.match_status not in _VALIDATED_MATCH_STATUSES
+
+        def keep_edge(edge: Edge) -> bool:
+            return edge.match_status not in _VALIDATED_MATCH_STATUSES
+
+    nodes: list[Node] = [
+        node.model_copy(deep=True)
+        for node in graph.nodes
+        if keep_node(node)
+    ]
     node_ids = {node.id for node in nodes}
     edges: list[Edge] = [
-        edge
+        edge.model_copy(deep=True)
         for edge in graph.edges
         if keep_edge(edge)
         and edge.source in node_ids

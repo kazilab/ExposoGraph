@@ -7,7 +7,7 @@ import math
 import shutil
 from collections import defaultdict
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 from importlib.resources import files as resource_files
 
@@ -687,9 +687,9 @@ def _export_engine(
     return filtered_engine(engine, normalized)
 
 
-def _require_plotly():
+def _require_plotly() -> Any:
     try:
-        import plotly.graph_objects as go
+        import plotly.graph_objects as go  # type: ignore[import-untyped]
     except ImportError as exc:  # pragma: no cover - exercised only when dependency missing
         raise ImportError(
             "Plotly export requires the `plotly` package. "
@@ -861,7 +861,7 @@ def to_plotly_figure(
     *,
     visibility: GraphVisibility | str = GraphVisibility.ALL,
     title: str | None = None,
-):
+) -> Any:
     """Build an interactive Plotly figure for the graph."""
     go = _require_plotly()
     export_engine = _export_engine(engine, visibility)
@@ -1009,7 +1009,9 @@ def to_plotly_html_string(
 ) -> str:
     """Render a standalone Plotly HTML document."""
     figure = to_plotly_figure(engine, visibility=visibility, title=title)
-    return figure.to_html(
+    return cast(
+        str,
+        figure.to_html(
         full_html=True,
         include_plotlyjs=include_plotlyjs,
         config={
@@ -1017,6 +1019,7 @@ def to_plotly_html_string(
             "responsive": True,
             "scrollZoom": True,
         },
+        ),
     )
 
 

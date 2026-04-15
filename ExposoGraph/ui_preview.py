@@ -7,10 +7,10 @@ import streamlit as st
 try:
     from streamlit_agraph import Config, Edge as AEdge, Node as ANode, agraph
 except ModuleNotFoundError as exc:  # pragma: no cover - depends on optional extra
-    Config = None  # type: ignore[assignment]
-    AEdge = None  # type: ignore[assignment]
-    ANode = None  # type: ignore[assignment]
-    agraph = None  # type: ignore[assignment]
+    Config = None
+    AEdge = None
+    ANode = None
+    agraph = None
     _AGRAPH_IMPORT_ERROR: ModuleNotFoundError | None = exc
 else:
     _AGRAPH_IMPORT_ERROR = None

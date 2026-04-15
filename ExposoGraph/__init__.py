@@ -57,7 +57,10 @@ from .example_graphs import (
     write_full_legends_exports,
 )
 from .androgen_publication_figure import render_androgen_publication_figure
-from .exemplar_pathways_figure import render_exemplar_pathways_figure
+from .exemplar_pathways_figure import (
+    render_exemplar_pathways_figure,
+    render_genotype_comparison_figure,
+)
 from .pharmacogenomic_risk_figure import (
     PharmacogenomicRiskClassProfile,
     PharmacogenomicRiskGeneProfile,
@@ -68,6 +71,7 @@ from .pharmacogenomic_risk_figure import (
     render_pharmacogenomic_risk_figure,
 )
 from .exporter import (
+    bundle_to_html_string,
     ensure_viewer_bundle,
     export_viewer_bundle,
     parse_graph_artifact,
@@ -205,6 +209,7 @@ __all__ = [
     "build_full_panel",
     "build_tier1_panel",
     "build_tier2_panel",
+    "bundle_to_html_string",
     "build_cytoscape_bundle",
     "build_cytoscape_elements",
     "build_cytoscape_metadata",
@@ -260,6 +265,7 @@ __all__ = [
     "persistence_enabled",
     "render_androgen_publication_figure",
     "render_exemplar_pathways_figure",
+    "render_genotype_comparison_figure",
     "render_architecture_figure",
     "render_pharmacogenomic_risk_figure",
     "save_architecture_figure",

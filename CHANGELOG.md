@@ -2,6 +2,31 @@
 
 All notable changes to ExposoGraph will be documented in this file.
 
+## [0.0.4] - 2026-04-15
+
+### Fixed
+
+- **Parallel edge preservation** — `GraphEngine` now preserves multiple edges
+  that share the same `(source, type, target)` triple instead of silently
+  overwriting earlier evidence records
+- **KEGG fixed-width parsing** — the KEGG client now correctly parses
+  multi-line `GENE` sections with numeric gene IDs and multi-line `PATHWAY`
+  sections from `get/{id}` records, so seeded graphs retain the expected gene
+  symbols and pathway memberships
+- **`metabolism_chain()` scope leakage** — carcinogen-specific pathway
+  traversal no longer absorbs unrelated unlabeled branches merely because they
+  share an upstream enzyme node
+- **Filtered graph aliasing** — `filter_knowledge_graph()` now returns
+  detached model copies instead of reusing the original `Node` and `Edge`
+  objects
+
+### Changed
+
+- Strict `mypy` checks are back in sync with the shipped source tree
+- Documentation now reflects the current `0.0.4` package version and the
+  clarified semantics for graph filtering, KEGG seeding, and metabolism-chain
+  traversal
+
 ## [0.0.3] - 2026-03-21
 
 ### Changed

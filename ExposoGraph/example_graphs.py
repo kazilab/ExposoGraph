@@ -1515,7 +1515,7 @@ def _canonical_curated_node(
     reactivity: str | None = None,
     **extra_fields: object,
 ) -> Node:
-    return Node(
+    node = Node(
         id=node_id,
         label=label,
         type=node_type,
@@ -1527,8 +1527,10 @@ def _canonical_curated_node(
         canonical_label=label,
         canonical_namespace=_SHOWCASE_NAMESPACE,
         provenance=list(provenance),
-        **extra_fields,
     )
+    if extra_fields:
+        return node.model_copy(update=extra_fields)
+    return node
 
 
 def _carcinogen_node(spec: Spec) -> Node:
@@ -1670,11 +1672,17 @@ def _relation(spec: Spec) -> Edge:
     else:
         provenance = [_curated_ref(record_id, spec["label"], spec["label"])]
 
-    edge_kwargs: dict[str, object] = {}
     if edge_type == EdgeType.CUSTOM:
-        edge_kwargs["custom_predicate"] = spec["custom_predicate"]
-        edge_kwargs["match_status"] = MatchStatus.CUSTOM
-
+        return Edge(
+            source=spec["source"],
+            target=spec["target"],
+            type=edge_type,
+            label=spec["label"],
+            carcinogen=spec.get("carcinogen"),
+            provenance=provenance,
+            custom_predicate=spec["custom_predicate"],
+            match_status=MatchStatus.CUSTOM,
+        )
     return Edge(
         source=spec["source"],
         target=spec["target"],
@@ -1682,7 +1690,6 @@ def _relation(spec: Spec) -> Edge:
         label=spec["label"],
         carcinogen=spec.get("carcinogen"),
         provenance=provenance,
-        **edge_kwargs,
     )
 
 
@@ -1796,8 +1803,8 @@ def _normalize_reference_graph_ids(graph: KnowledgeGraph) -> KnowledgeGraph:
         payload["target"] = _canonical_showcase_id(edge.target)
         if edge.carcinogen:
             payload["carcinogen"] = _canonical_showcase_id(edge.carcinogen)
-        normalized = Edge(**payload)
-        edge_by_identity.setdefault(_edge_identity(normalized), normalized)
+        normalized_edge = Edge(**payload)
+        edge_by_identity.setdefault(_edge_identity(normalized_edge), normalized_edge)
 
     return KnowledgeGraph(
         nodes=list(node_by_id.values()),

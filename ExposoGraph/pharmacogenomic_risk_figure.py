@@ -432,7 +432,7 @@ def render_pharmacogenomic_risk_figure(
         ha="center",
     )
 
-    max_impact = max(profile.impact_score for profile in gene_profiles)
+    max_impact = max(gene_profile.impact_score for gene_profile in gene_profiles)
     ax_gene.set_xlim(-0.02, 2.25)
     ax_gene.set_ylim(-0.12, max_impact + 0.75)
     ax_gene.grid(color=_GRID, linewidth=0.9, alpha=0.7)
@@ -469,13 +469,13 @@ def render_pharmacogenomic_risk_figure(
         (10, 17),
         (-58, 17),
     )
-    for idx, profile in enumerate(gene_profiles):
-        point_size = 90 + (profile.class_count * 36)
+    for idx, gene_profile in enumerate(gene_profiles):
+        point_size = 120 + (gene_profile.class_count * 48)
         ax_gene.scatter(
-            profile.activity_score,
-            profile.impact_score,
+            gene_profile.activity_score,
+            gene_profile.impact_score,
             s=point_size,
-            color=_ROLE_COLORS.get(profile.role_bucket, _ROLE_COLORS["Other"]),
+            color=_ROLE_COLORS.get(gene_profile.role_bucket, _ROLE_COLORS["Other"]),
             alpha=0.92,
             edgecolor="#ffffff",
             linewidth=1.2,
@@ -483,11 +483,11 @@ def render_pharmacogenomic_risk_figure(
         )
         dx, dy = offsets[idx % len(offsets)]
         ax_gene.annotate(
-            profile.gene_id,
-            (profile.activity_score, profile.impact_score),
+            gene_profile.gene_id,
+            (gene_profile.activity_score, gene_profile.impact_score),
             xytext=(dx, dy),
             textcoords="offset points",
-            fontsize=8.6,
+            fontsize=9.5,
             color=_TEXT_DARK,
             bbox={
                 "boxstyle": "round,pad=0.18",

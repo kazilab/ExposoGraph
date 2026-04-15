@@ -8,6 +8,7 @@ from contextlib import suppress
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
+from types import TracebackType
 
 from .config import GraphVisibility, normalize_graph_visibility
 from .engine import GraphEngine
@@ -80,7 +81,12 @@ class GraphRepository:
     def __enter__(self) -> GraphRepository:
         return self
 
-    def __exit__(self, exc_type, exc, tb) -> None:
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc: BaseException | None,
+        tb: TracebackType | None,
+    ) -> None:
         self.close()
 
     def __del__(self) -> None:

@@ -54,11 +54,12 @@ EDGE_COLORS = {
     "TRANSPORTS": "#5591c7",
     "FORMS_ADDUCT": "#a86fdf",
     "REPAIRS": "#e8af34",
-    "PATHWAY": "#888888",
+    "PATHWAY": "#707a8a",
     "EXPRESSED_IN": "#c2855a",
     "INDUCES": "#d4a843",
     "INHIBITS": "#8b4a6b",
     "ENCODES": "#3d8b8b",
+    "CUSTOM": "#9ea9bd",
 }
 
 # ── Search field tuples ───────────────────────────────────────────────────

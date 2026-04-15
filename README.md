@@ -229,6 +229,13 @@ clf = IARCClassifier()
 clf.classify("Benzo[a]pyrene")  # → IARCGroup.GROUP_1
 ```
 
+#### Behavior Notes
+
+- `GraphEngine` preserves parallel edges, so multiple evidence records can coexist even when they share the same source, edge type, and target.
+- `metabolism_chain()` stays scoped to the carcinogen-linked metabolism subgraph and does not pull in unrelated unlabeled branches through a shared enzyme.
+- `filter_knowledge_graph()` returns detached copies of nodes and edges, so mutating a filtered result does not mutate the original graph.
+- The KEGG client and KEGG-based seeding support fixed-width multi-line KEGG records, including numeric `GENE` rows and continued `PATHWAY` sections.
+
 #### Reference Curation Metadata
 
 ```python
@@ -398,7 +405,8 @@ tests/
 pip install -e ".[all]"
 pytest                           # runs with --cov, 85% threshold gate
 ruff check .
-mypy ExposoGraph/
+python -m mypy ExposoGraph
+python -m sphinx -b html docs docs/_build/html
 ```
 
 ### Optional dependency groups

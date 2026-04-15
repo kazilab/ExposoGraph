@@ -58,8 +58,8 @@ def test_build_architecture_figure_data_supports_legacy_overrides():
 
     assert data.title.startswith("CarcinoGenomic Knowledge Graph")
     assert data.layer_counts["Carcinogens"] == 15
-    assert data.summary_lines[0] == "96 nodes  ·  102 edges"
-    assert any(item.label == "ACTIVATES" and item.count == 24 for item in data.edge_legend)
+    assert data.summary_lines[0] == "98 nodes  ·  110 edges"
+    assert any(item.label == "ACTIVATES" and item.count == 30 for item in data.edge_legend)
 
 
 def test_save_architecture_figure_writes_file(tmp_path: Path):

@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "ExposoGraph"
-version = "0.0.3"
+version = "0.0.4"
 description = "ExposoGraph — LLM-powered extraction and manual curation of carcinogen metabolism pathways"
 readme = "README.md"
 license = "MIT"
@@ -64,6 +64,7 @@ dev = [
     "pytest-cov",
     "ruff",
     "mypy",
+    "matplotlib>=3.8",
 ]
 docs = [
     "sphinx>=8.2.0",

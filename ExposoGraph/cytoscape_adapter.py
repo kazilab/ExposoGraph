@@ -288,6 +288,24 @@ def viewer_stylesheet() -> list[dict[str, Any]]:
             },
         },
         {
+            "selector": "node[background_opacity]",
+            "style": {
+                "background-opacity": "data(background_opacity)",
+            },
+        },
+        {
+            "selector": "edge[opacity]",
+            "style": {
+                "opacity": "data(opacity)",
+            },
+        },
+        {
+            "selector": "edge[target_arrow_shape]",
+            "style": {
+                "target-arrow-shape": "data(target_arrow_shape)",
+            },
+        },
+        {
             "selector": ".type-carcinogen",
             "style": {
                 "font-size": 12,
@@ -327,9 +345,22 @@ def viewer_stylesheet() -> list[dict[str, Any]]:
             },
         },
         {
+            "selector": ".edge-detoxifies",
+            "style": {
+                "line-style": "dashed",
+            },
+        },
+        {
             "selector": ".edge-transports",
             "style": {
                 "curve-style": "unbundled-bezier",
+            },
+        },
+        {
+            "selector": "node[activity_border_color]",
+            "style": {
+                "border-color": "data(activity_border_color)",
+                "border-width": "data(activity_border_width)",
             },
         },
         {
@@ -412,7 +443,16 @@ def viewer_stylesheet() -> list[dict[str, Any]]:
 
 def viewer_layout(
     layout_mode: ViewerLayoutMode | str = ViewerLayoutMode.COSE,
+    *,
+    edge_weights: Mapping[str, float] | None = None,
 ) -> dict[str, Any]:
+    """Return Cytoscape layout config.
+
+    When *edge_weights* is supplied and the layout mode is COSE, the
+    ``idealEdgeLength`` is scaled per-edge using the weight (higher
+    weight = shorter edge).  The weights dict maps ``"source->target"``
+    keys to float values in ``(0, 1]``.
+    """
     normalized = normalize_viewer_layout_mode(layout_mode)
     if normalized == ViewerLayoutMode.PRESET:
         return {"name": "preset", "fit": True, "padding": 40, "animate": False}
@@ -426,15 +466,20 @@ def viewer_layout(
         }
     if normalized == ViewerLayoutMode.CIRCLE:
         return {"name": "circle", "fit": True, "padding": 50, "animate": True}
-    return {
+    base_ideal_length = 120
+    layout: dict[str, Any] = {
         "name": "cose",
         "fit": True,
         "padding": 45,
         "animate": True,
         "nodeRepulsion": 120000,
-        "idealEdgeLength": 120,
+        "idealEdgeLength": base_ideal_length,
         "edgeElasticity": 140,
     }
+    if edge_weights:
+        # Store weights for potential client-side per-edge length scaling
+        layout["_edge_weights"] = dict(edge_weights)
+    return layout
 
 
 def _node_classes(data: Mapping[str, Any]) -> str:
@@ -460,27 +505,57 @@ def _edge_classes(data: Mapping[str, Any]) -> str:
     return " ".join(classes)
 
 
+def _activity_indicator(activity_score: float | None) -> tuple[str, int]:
+    """Return (border_color, border_width) based on activity score deviation."""
+    if activity_score is None:
+        return ("#08111f", 2)
+    deviation = abs(activity_score - 1.0)
+    border_width = max(2, min(6, round(2 + deviation * 4)))
+    if activity_score > 1.0:
+        return ("#e05565", border_width)  # red = increased activation risk
+    if activity_score < 1.0:
+        return ("#6daa45", border_width)  # green = reduced activity
+    return ("#08111f", 2)
+
+
 def _node_data(data: Mapping[str, Any]) -> dict[str, Any]:
     node_type = str(data.get("type", "Node"))
+    activity_score = data.get("activity_score")
+    indicator_color, indicator_width = _activity_indicator(activity_score)
     return {
         **dict(data),
         "kind": "node",
         "color": _NODE_COLORS.get(node_type, "#76c3ff"),
         "shape": _NODE_SHAPES.get(node_type, "ellipse"),
         "size": _NODE_SIZES.get(node_type, 36),
+        "activity_border_color": indicator_color,
+        "activity_border_width": indicator_width,
     }
 
 
-def _edge_data(data: Mapping[str, Any], *, edge_id: str) -> dict[str, Any]:
+def _edge_data(
+    data: Mapping[str, Any],
+    *,
+    edge_id: str,
+    source_activity_score: float | None = None,
+) -> dict[str, Any]:
     edge_type = str(data.get("type", "EDGE"))
     label = data.get("label") or edge_type.replace("_", " ").title()
+    base_width = _EDGE_WIDTHS.get(edge_type, 2)
+    # Scale edge width by source enzyme activity score for metabolism edges
+    if source_activity_score is not None and edge_type in {
+        "ACTIVATES", "DETOXIFIES", "REPAIRS",
+    }:
+        scaled_width = max(1, min(8, round(base_width * source_activity_score)))
+    else:
+        scaled_width = base_width
     return {
         **dict(data),
         "id": edge_id,
         "kind": "edge",
         "label": label,
         "color": _EDGE_COLORS.get(edge_type, "#8ea4bb"),
-        "width": _EDGE_WIDTHS.get(edge_type, 2),
+        "width": scaled_width,
     }
 
 
@@ -513,8 +588,14 @@ def build_cytoscape_elements(
         count = edge_counts.get(edge_key, 0)
         edge_counts[edge_key] = count + 1
         edge_id = edge_key if count == 0 else f"{edge_key}:{count}"
+        source_data = engine.G.nodes.get(source, {})
+        source_activity = source_data.get("activity_score")
         element = {
-            "data": _edge_data(data, edge_id=edge_id),
+            "data": _edge_data(
+                data,
+                edge_id=edge_id,
+                source_activity_score=source_activity,
+            ),
             "classes": _edge_classes(data),
             "selectable": True,
         }

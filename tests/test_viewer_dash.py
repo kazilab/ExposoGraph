@@ -6,6 +6,7 @@ from ExposoGraph.cytoscape_adapter import build_cytoscape_bundle
 from ExposoGraph.engine import GraphEngine
 from ExposoGraph.models import Edge, EdgeType, MatchStatus, Node, NodeType, RecordOrigin
 from ExposoGraph.viewer_dash import (
+    _apply_genotype_profile,
     _merge_bundle_positions,
     _toggle_filter_values,
     apply_viewer_filters,
@@ -158,3 +159,34 @@ def test_create_dash_viewer_app_exposes_expected_component_ids():
     assert "viewer-node-types" in ids
     assert "viewer-edge-types" in ids
     assert "viewer-carcinogen-group" in ids
+    assert "viewer-genotype-feedback" in ids
+
+
+def test_apply_genotype_profile_adds_visible_opacity_and_knockout_styles():
+    engine = GraphEngine()
+    engine.add_node(Node(id="CYP1A1", label="CYP1A1", type=NodeType.ENZYME))
+    engine.add_node(Node(id="GSTM1", label="GSTM1", type=NodeType.ENZYME))
+    engine.add_node(Node(id="BPDE", label="BPDE", type=NodeType.METABOLITE))
+    engine.add_node(Node(id="BPDE_GSH", label="BPDE-GSH", type=NodeType.METABOLITE))
+    engine.add_edge(Edge(source="CYP1A1", target="BPDE", type=EdgeType.ACTIVATES))
+    engine.add_edge(Edge(source="GSTM1", target="BPDE_GSH", type=EdgeType.DETOXIFIES))
+
+    bundle = build_cytoscape_bundle(engine)
+    styled = _apply_genotype_profile(bundle.elements, "bap_high_risk")
+
+    node_data = {
+        element["data"]["id"]: element["data"]
+        for element in styled
+        if element["data"].get("kind") == "node"
+    }
+    edge_data = {
+        element["data"]["source"]: element["data"]
+        for element in styled
+        if element["data"].get("kind") == "edge"
+    }
+
+    assert node_data["CYP1A1"]["background_opacity"] == 1.0
+    assert node_data["GSTM1"]["background_opacity"] == 0.18
+    assert edge_data["CYP1A1"]["opacity"] == 0.96
+    assert edge_data["GSTM1"]["target_arrow_shape"] == "none"
+    assert edge_data["GSTM1"]["color"] == "#b9c1cb"

@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass, field
-from typing import Iterable, Sequence
+from typing import Iterable, Mapping, Sequence
 
 from .config import GraphMode, normalize_graph_mode
 from .db_clients.iarc import IARCClassifier
@@ -30,7 +30,7 @@ class GroundingMatch:
     canonical_label: str
     canonical_namespace: str
     match_status: MatchStatus
-    extra_fields: dict[str, str | int | float | None] = field(default_factory=dict)
+    extra_fields: Mapping[str, str | int | float | None] = field(default_factory=dict)
 
 
 def normalize_grounding_key(value: str) -> str:
@@ -82,7 +82,7 @@ def build_graph_grounding_index(
     for node in graph.nodes:
         canonical_id = node.canonical_id or node.id
         canonical_label = node.canonical_label or node.label
-        extra_fields = {
+        extra_fields: Mapping[str, str | int | float | None] = {
             "tier": node.tier,
             "group": node.group,
             "iarc": node.iarc,
@@ -118,28 +118,22 @@ def build_iarc_grounding_index(
 ) -> dict[str, GroundingMatch]:
     """Build a normalized lookup index from the bundled IARC classifier data."""
     classifier = classifier or IARCClassifier()
-    grouped: dict[str, dict[str, object]] = {}
+    grouped_names: dict[str, list[str]] = {}
+    grouped_entries: dict[str, dict[str, str]] = {}
     for name in classifier.all_chemicals:
         entry = classifier.get_entry(name)
         if entry is None:
             continue
         group_key = entry.get("cas") or name
-        bucket = grouped.setdefault(
-            group_key,
-            {
-                "names": [],
-                "entry": entry,
-            },
-        )
-        bucket["names"].append(name)  # type: ignore[index]
+        grouped_names.setdefault(group_key, []).append(name)
+        grouped_entries.setdefault(group_key, entry)
 
     index: dict[str, GroundingMatch] = {}
-    for group_key, bucket in grouped.items():
-        names = bucket["names"]  # type: ignore[assignment]
-        entry = bucket["entry"]  # type: ignore[assignment]
+    for group_key, names in grouped_names.items():
+        entry = grouped_entries[group_key]
         canonical_label = _choose_canonical_label(names)
         canonical_id = entry.get("cas") or canonical_label
-        extra_fields = {
+        extra_fields: Mapping[str, str | int | float | None] = {
             "group": entry.get("category"),
             "iarc": entry.get("group"),
         }
@@ -213,18 +207,21 @@ def ground_node(
         match = grounding_index.get(normalized)
         if match is None:
             continue
-        updates = {
+        updates: dict[str, object] = {
             "match_status": match.match_status,
             "canonical_id": match.canonical_id,
             "canonical_label": match.canonical_label,
             "canonical_namespace": match.canonical_namespace,
         }
-        if node.tier is None and match.extra_fields.get("tier") is not None:
-            updates["tier"] = match.extra_fields["tier"]
-        if node.group is None and match.extra_fields.get("group"):
-            updates["group"] = match.extra_fields["group"]
-        if node.iarc is None and match.extra_fields.get("iarc"):
-            updates["iarc"] = match.extra_fields["iarc"]
+        tier_value = match.extra_fields.get("tier")
+        if node.tier is None and isinstance(tier_value, int):
+            updates["tier"] = tier_value
+        group_value = match.extra_fields.get("group")
+        if node.group is None and isinstance(group_value, str) and group_value:
+            updates["group"] = group_value
+        iarc_value = match.extra_fields.get("iarc")
+        if node.iarc is None and isinstance(iarc_value, str) and iarc_value:
+            updates["iarc"] = iarc_value
         return node.model_copy(update=updates)
 
     return node.model_copy(update={"match_status": MatchStatus.UNMATCHED})
@@ -262,8 +259,10 @@ def ground_knowledge_graph(
         if edge.type == EdgeType.CUSTOM:
             grounded_edges.append(edge.model_copy(update={"match_status": MatchStatus.CUSTOM}))
             continue
-        source_status = node_by_id.get(edge.source).match_status if edge.source in node_by_id else MatchStatus.UNMATCHED
-        target_status = node_by_id.get(edge.target).match_status if edge.target in node_by_id else MatchStatus.UNMATCHED
+        source_node = node_by_id.get(edge.source)
+        target_node = node_by_id.get(edge.target)
+        source_status = source_node.match_status if source_node is not None else MatchStatus.UNMATCHED
+        target_status = target_node.match_status if target_node is not None else MatchStatus.UNMATCHED
         if source_status in _VALIDATED_MATCH_STATUSES and target_status in _VALIDATED_MATCH_STATUSES:
             grounded_edges.append(
                 edge.model_copy(

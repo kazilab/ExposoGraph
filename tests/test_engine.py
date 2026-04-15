@@ -65,6 +65,17 @@ class TestAddEdge:
         with pytest.raises(ValueError, match="Missing carcinogen context"):
             engine.add_edge(Edge(source="A", target="B", type=EdgeType.ACTIVATES, carcinogen="BaP"))
 
+    def test_parallel_edges_are_preserved(self, engine):
+        engine.add_node(Node(id="A", label="A", type=NodeType.ENZYME))
+        engine.add_node(Node(id="B", label="B", type=NodeType.METABOLITE))
+
+        engine.add_edge(Edge(source="A", target="B", type=EdgeType.ACTIVATES, pmid="1"))
+        engine.add_edge(Edge(source="A", target="B", type=EdgeType.ACTIVATES, pmid="2"))
+
+        assert engine.edge_count == 2
+        edge_pmids = {edge["pmid"] for edge in engine.to_dict()["edges"]}
+        assert edge_pmids == {"1", "2"}
+
 
 class TestLoadAndMerge:
     def test_load(self, engine, sample_kg):

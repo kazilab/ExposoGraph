@@ -33,6 +33,25 @@ class TestKEGGClient:
         assert "CYP1A1" in pathway.genes
 
     @patch("requests.get")
+    def test_get_pathway_parses_numeric_gene_rows(self, mock_get):
+        mock_resp = MagicMock()
+        mock_resp.text = (
+            "ENTRY       hsa05204\n"
+            "NAME        Chemical carcinogenesis - DNA adducts\n"
+            "GENE        1543  CYP1A1; cytochrome P450 [KO:K07408]\n"
+            "            1544  CYP1A2; cytochrome P450 [KO:K07409]\n"
+            "            1545  CYP1B1; cytochrome P450 [KO:K07410]\n"
+            "COMPOUND    C00001\n"
+        )
+        mock_resp.raise_for_status = MagicMock()
+        mock_get.return_value = mock_resp
+
+        client = KEGGClient()
+        pathway = client.get_pathway("hsa05204")
+
+        assert pathway.genes == ["CYP1A1", "CYP1A2", "CYP1B1"]
+
+    @patch("requests.get")
     def test_get_pathway_strips_path_prefix(self, mock_get):
         mock_resp = MagicMock()
         mock_resp.text = "ENTRY       hsa05204\nNAME        Test\n"
@@ -64,6 +83,25 @@ class TestKEGGClient:
         assert isinstance(gene, KEGGGene)
         assert gene.symbol == "CYP1A1"
         assert "hsa05204" in gene.pathways
+
+    @patch("requests.get")
+    def test_get_gene_reads_continued_pathway_lines(self, mock_get):
+        mock_resp = MagicMock()
+        mock_resp.text = (
+            "ENTRY       1543\n"
+            "SYMBOL      CYP1A1\n"
+            "NAME        cytochrome P450 family 1 subfamily A member 1\n"
+            "PATHWAY     hsa05204  Chemical carcinogenesis - DNA adducts\n"
+            "            hsa00980  Metabolism of xenobiotics by cytochrome P450\n"
+            "            hsa00830  Retinol metabolism\n"
+        )
+        mock_resp.raise_for_status = MagicMock()
+        mock_get.return_value = mock_resp
+
+        client = KEGGClient()
+        gene = client.get_gene("hsa:1543")
+
+        assert gene.pathways == ["hsa05204", "hsa00980", "hsa00830"]
 
     @patch("requests.get")
     def test_find_genes(self, mock_get):

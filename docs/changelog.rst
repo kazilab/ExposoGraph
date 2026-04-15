@@ -1,6 +1,21 @@
 Changelog
 =========
 
+0.0.4 (2026-04-15)
+------------------
+
+Current release.
+
+- Preserved parallel edges in the NetworkX ``MultiDiGraph`` engine so distinct
+  evidence edges with the same source, predicate, and target are no longer overwritten
+- Corrected KEGG fixed-width record parsing for multi-line ``GENE`` and
+  ``PATHWAY`` sections used by the seeding workflow
+- Tightened ``metabolism_chain()`` traversal so carcinogen-specific chains do
+  not absorb unrelated unlabeled branches through shared enzymes
+- ``filter_knowledge_graph()`` now returns detached model copies rather than
+  aliasing the source graph objects
+- Restored a clean strict ``mypy`` pass for the shipped source tree
+
 0.0.3 (2026-03-21)
 ------------------
 

@@ -26,6 +26,17 @@ class GraphEngine:
     def add_node(self, node: Node) -> None:
         self.G.add_node(node.id, **node.model_dump(exclude_none=True, mode="json"))
 
+    def _edge_key(self, edge: Edge) -> str:
+        """Return a stable edge key while preserving parallel edges."""
+        base_key = f"{edge.source}-{edge.type.value}-{edge.target}"
+        if not self.G.has_edge(edge.source, edge.target, base_key):
+            return base_key
+
+        suffix = 2
+        while self.G.has_edge(edge.source, edge.target, f"{base_key}-{suffix}"):
+            suffix += 1
+        return f"{base_key}-{suffix}"
+
     def add_edge(self, edge: Edge) -> None:
         if edge.source not in self.G:
             raise ValueError(f"Missing source node: {edge.source}")
@@ -37,7 +48,7 @@ class GraphEngine:
         self.G.add_edge(
             edge.source,
             edge.target,
-            key=f"{edge.source}-{edge.type.value}-{edge.target}",
+            key=self._edge_key(edge),
             **edge.model_dump(exclude_none=True, mode="json"),
         )
 

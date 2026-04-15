@@ -25,6 +25,7 @@ _METABOLISM_EDGE_TYPES = frozenset({
     "FORMS_ADDUCT",
     "REPAIRS",
 })
+_BRIDGE_NODE_TYPES = frozenset({"Carcinogen", "Metabolite", "DNA_Adduct", "Pathway", "Tissue"})
 
 
 @dataclass
@@ -135,7 +136,14 @@ def metabolism_chain(
         return chain
 
     visited_nodes: set[str] = set()
+    bridge_nodes: set[str] = set()
     chain_edges: list[dict[str, Any]] = []
+
+    def _update_bridge_nodes(node_ids: set[str]) -> None:
+        for node_id in node_ids:
+            node_data = engine.get_node(node_id)
+            if node_data is not None and node_data.get("type") in _BRIDGE_NODE_TYPES:
+                bridge_nodes.add(node_id)
 
     for u, v, data in engine.G.edges(data=True):
         etype = data.get("type", "")
@@ -149,10 +157,11 @@ def metabolism_chain(
         ):
             chain_edges.append(dict(data, _source=u, _target=v))
             visited_nodes.update((u, v))
+            _update_bridge_nodes({u, v})
 
-    # BFS to include transitive edges (e.g. metabolite → adduct → repair)
-    # that don't directly reference the carcinogen but connect to nodes
-    # already in the chain.
+    # Expand through unlabeled metabolism edges only from non-enzyme bridge
+    # nodes already tied to the carcinogen. This prevents unrelated branches
+    # from being pulled in through shared enzymes such as CYP1A1.
     changed = True
     while changed:
         changed = False
@@ -163,11 +172,15 @@ def metabolism_chain(
             edge_dict = dict(data, _source=u, _target=v)
             if edge_dict in chain_edges:
                 continue
-            if u in visited_nodes or v in visited_nodes:
+            edge_carcinogen = data.get("carcinogen")
+            if edge_carcinogen not in (None, carcinogen_id):
+                continue
+            if edge_carcinogen == carcinogen_id or u in bridge_nodes or v in bridge_nodes:
                 chain_edges.append(edge_dict)
                 new_nodes = {u, v} - visited_nodes
                 if new_nodes:
                     visited_nodes.update(new_nodes)
+                    _update_bridge_nodes(new_nodes)
                     changed = True
 
     chain.node_ids = sorted(visited_nodes)
@@ -249,3 +262,57 @@ def variant_impact_score(
         downstream_repair_count=repair_count,
         score=score,
     )
+
+
+def compute_edge_weights(
+    engine: GraphEngine,
+) -> dict[str, float]:
+    """Compute topology-based edge weights for layout distance scaling.
+
+    Each edge receives a weight ``w = 1 / (1 + hop_count)`` where
+    *hop_count* is the shortest-path length from the edge's source to the
+    nearest DNA_Adduct node via metabolism edges.  Edges closer to an
+    adduct endpoint receive higher weights (shorter ideal layout distance).
+
+    Returns a dict mapping ``"source->target"`` keys to weight floats.
+    """
+    G = engine.G
+
+    # Identify adduct nodes
+    adduct_ids = {
+        str(node_id)
+        for node_id, data in G.nodes(data=True)
+        if data.get("type") == "DNA_Adduct"
+    }
+
+    # For each node, compute shortest hop count to any adduct via metabolism edges
+    metabolism_graph = nx.DiGraph()
+    for u, v, data in G.edges(data=True):
+        if data.get("type", "") in _METABOLISM_EDGE_TYPES:
+            metabolism_graph.add_edge(u, v)
+
+    hop_to_adduct: dict[str, int] = {}
+    for adduct_id in adduct_ids:
+        hop_to_adduct[adduct_id] = 0
+
+    for node_id in metabolism_graph.nodes():
+        if node_id in hop_to_adduct:
+            continue
+        min_hops = None
+        for adduct_id in adduct_ids:
+            try:
+                path_len = nx.shortest_path_length(metabolism_graph, node_id, adduct_id)
+                if min_hops is None or path_len < min_hops:
+                    min_hops = path_len
+            except (nx.NetworkXNoPath, nx.NodeNotFound):
+                continue
+        if min_hops is not None:
+            hop_to_adduct[str(node_id)] = min_hops
+
+    weights: dict[str, float] = {}
+    for u, v, data in G.edges(data=True):
+        hop_count = hop_to_adduct.get(str(u), 3)  # default 3 for unreachable
+        weight = 1.0 / (1.0 + hop_count)
+        weights[f"{u}->{v}"] = round(weight, 4)
+
+    return weights

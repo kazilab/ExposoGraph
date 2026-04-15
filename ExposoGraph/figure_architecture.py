@@ -105,7 +105,7 @@ class ArchitectureFigureData:
     summary_lines: tuple[str, ...]
 
 
-def _require_matplotlib() -> tuple[Any, Any, Any]:
+def _require_matplotlib() -> tuple[Any, Any, Any, Any]:
     try:
         import matplotlib.pyplot as plt
         from matplotlib.patches import Circle, FancyArrowPatch, FancyBboxPatch
@@ -290,39 +290,39 @@ def _summary_lines(
 
 
 def paper_architecture_overrides() -> dict[str, Any]:
-    """Return override values matching the legacy architecture figure."""
+    """Return override values matching the current manuscript architecture figure."""
     return {
         "title": "CarcinoGenomic Knowledge Graph -- Platform Architecture",
         "subtitle": "Five-layer data model integrating carcinogen metabolism with pharmacogenomic variation",
         "layer_count_overrides": {
             "Carcinogens": 15,
-            "Enzymes": 36,
+            "Enzymes": 38,
             "Metabolites": 28,
             "DNA Adducts": 11,
             "KEGG Pathways": 6,
         },
         "enzyme_category_count_overrides": {
-            "Phase I -- Activation": 15,
-            "Phase II -- Conjugation": 13,
+            "Phase I -- Activation": 14,
+            "Phase II -- Conjugation": 14,
             "Phase III -- Transport": 3,
-            "DNA Repair": 5,
+            "DNA Repair": 7,
         },
         "edge_count_overrides": {
-            EdgeType.ACTIVATES.value: 24,
-            EdgeType.DETOXIFIES.value: 19,
-            EdgeType.TRANSPORTS.value: 8,
-            EdgeType.FORMS_ADDUCT.value: 18,
-            EdgeType.REPAIRS.value: 15,
-            EdgeType.PATHWAY.value: 18,
+            EdgeType.ACTIVATES.value: 30,
+            EdgeType.DETOXIFIES.value: 23,
+            EdgeType.TRANSPORTS.value: 7,
+            EdgeType.FORMS_ADDUCT.value: 14,
+            EdgeType.REPAIRS.value: 17,
+            EdgeType.PATHWAY.value: 19,
         },
         "summary_overrides": {
-            "node_count": 96,
-            "edge_count": 102,
+            "node_count": 98,
+            "edge_count": 110,
             "node_type_count": 5,
             "edge_type_count": 6,
             "carcinogen_class_count": 9,
             "core_layer_count": 5,
-            "edge_total": 102,
+            "edge_total": 110,
             "summary_note": "Interactive D3.js force-directed layout",
         },
     }
@@ -378,7 +378,7 @@ def render_architecture_figure(
     """Render the architecture infographic and return the Matplotlib figure."""
     plt, FancyBboxPatch, Circle, FancyArrowPatch = _require_matplotlib()
 
-    fig, ax = plt.subplots(figsize=figsize, dpi=180)
+    fig, ax = plt.subplots(figsize=figsize, dpi=300)
     ax.set_xlim(0, 100)
     ax.set_ylim(0, 100)
     ax.axis("off")
@@ -442,11 +442,11 @@ def render_architecture_figure(
         color: str,
         label: str | None = None,
         label_xy: tuple[float, float] | None = None,
-        linewidth: float = 1.8,
+        linewidth: float = 2.4,
         linestyle: str = "-",
         mutation_scale: float = 11.0,
         connectionstyle: str = "arc3,rad=0.0",
-        label_size: float = 7.0,
+        label_size: float = 8.4,
         label_ha: str = "center",
     ) -> None:
         patch = FancyArrowPatch(
@@ -553,7 +553,7 @@ def render_architecture_figure(
         label_xy=(60.6, 60.2),
         linestyle=_EDGE_TYPE_STYLES[EdgeType.TRANSPORTS.value],
         mutation_scale=10.0,
-        label_size=6.8,
+        label_size=8.2,
     )
 
     add_arrow(
@@ -563,7 +563,7 @@ def render_architecture_figure(
         label="FORMS ADDUCT",
         label_xy=(58.8, 45.6),
         mutation_scale=10.5,
-        label_size=6.9,
+        label_size=8.3,
     )
     add_arrow(
         (36.1, enzyme_y + enzyme_h - 4.4),
@@ -572,7 +572,7 @@ def render_architecture_figure(
         label="REPAIRS",
         label_xy=(40.4, 50.5),
         mutation_scale=10.5,
-        label_size=6.9,
+        label_size=8.3,
         label_ha="left",
     )
 
@@ -600,7 +600,7 @@ def render_architecture_figure(
         label_xy=(60.0, 50.0),
         linestyle=_EDGE_TYPE_STYLES[EdgeType.PATHWAY.value],
         mutation_scale=11.0,
-        label_size=6.9,
+        label_size=8.3,
         label_ha="right",
     )
 
@@ -627,26 +627,30 @@ def render_architecture_figure(
     add_text(50, 15.2, f"{len(data.edge_legend)} Edge Types ({total_edges} Total Edges)", size=10.8, weight="bold", ha="center")
 
     x_positions = (10, 26, 42, 58, 74, 90)
-    for x, item in zip(x_positions, data.edge_legend, strict=True):
+    for x, edge_item in zip(x_positions, data.edge_legend, strict=True):
         ax.plot(
             [x - 4.2, x - 0.2],
             [10.0, 10.0],
-            color=item.color,
-            linewidth=2.0,
-            linestyle=item.linestyle,
+            color=edge_item.color,
+            linewidth=2.6,
+            linestyle=edge_item.linestyle,
         )
         arrow = FancyArrowPatch(
             (x - 0.4, 10.0),
             (x + 0.6, 10.0),
             arrowstyle="->",
-            mutation_scale=8,
-            linewidth=1.6,
-            color=item.color,
+            mutation_scale=10,
+            linewidth=2.2,
+            color=edge_item.color,
         )
         ax.add_patch(arrow)
-        label = item.label if item.count <= 0 else f"{item.label} ({item.count})"
-        add_text(x + 1.0, 10.2, label, size=7.0, color=item.color, weight="bold")
-        add_text(x + 1.0, 7.6, item.description, size=5.9, color="#7b8795")
+        label = (
+            edge_item.label
+            if edge_item.count <= 0
+            else f"{edge_item.label} ({edge_item.count})"
+        )
+        add_text(x + 1.0, 10.2, label, size=8.4, color=edge_item.color, weight="bold")
+        add_text(x + 1.0, 7.6, edge_item.description, size=7.1, color="#7b8795")
 
     fig.tight_layout()
     return fig

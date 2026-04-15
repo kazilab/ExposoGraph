@@ -8,7 +8,7 @@ manual entry.
 Part of the **CarcinoGenomic Platform** — a 5-layer computational pipeline
 for individualized carcinogen metabolism risk assessment from germline DNA.
 
-Version: **0.0.3**
+Version: **0.0.4**
 Developed by: **Data analysis team @ KaziLab**
 Contact: **exposograph@kazilab.se**
 Copyright: **KaziLab**
@@ -48,12 +48,14 @@ The current release separates two control layers:
    api/config
    api/models
    api/engine
+   api/graph_analysis
    api/exporter
    api/cytoscape_adapter
    api/viewer_dash
    api/graph_filters
    api/grounding
    api/llm_extractor
+   api/db_clients
    api/seeder
    api/example_graphs
    api/reference_data

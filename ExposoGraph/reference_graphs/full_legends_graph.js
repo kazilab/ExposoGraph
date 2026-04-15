@@ -66,6 +66,8 @@ const GRAPH_DATA = {
     { id: "ERCC2", label: "ERCC2/XPD", type: "Enzyme", phase: "Repair", role: "Repair", detail: "NER helicase; opens DNA at bulky adduct damage sites" },
     { id: "OGG1", label: "OGG1", type: "Enzyme", phase: "Repair", role: "Repair", detail: "8-oxoguanine glycosylase; repairs oxidative DNA damage" },
     { id: "MGMT", label: "MGMT", type: "Enzyme", phase: "Repair", role: "Repair", detail: "O6-methylguanine-DNA methyltransferase; removes alkyl adducts" },
+    { id: "MLH1", label: "MLH1", type: "Enzyme", phase: "Repair", role: "Repair", detail: "MutL homolog 1; mismatch repair of replication errors past DNA adducts" },
+    { id: "MSH2", label: "MSH2", type: "Enzyme", phase: "Repair", role: "Repair", detail: "MutS homolog 2; mismatch recognition during post-replicative repair at adduct sites" },
 
     // ── METABOLITES (Reactive Intermediates) ──────────────────────────
     { id: "BPDE", label: "BPDE", type: "Metabolite", reactivity: "High", detail: "Benzo[a]pyrene-7,8-diol-9,10-epoxide; ultimate PAH carcinogen" },
@@ -137,9 +139,13 @@ const GRAPH_DATA = {
     // PAH DNA repair
     { source: "XPC", target: "BPDE_dG", type: "REPAIRS", label: "NER recognition" },
     { source: "ERCC2", target: "BPDE_dG", type: "REPAIRS", label: "NER helicase" },
+    { source: "MLH1", target: "BPDE_dG", type: "REPAIRS", label: "MMR" },
+    { source: "MSH2", target: "BPDE_dG", type: "REPAIRS", label: "MMR" },
     // PAH oxidative damage
     { source: "BaP", target: "8oxodG", type: "FORMS_ADDUCT", label: "ROS generation" },
     { source: "OGG1", target: "8oxodG", type: "REPAIRS", label: "8-oxoG excision" },
+    { source: "MLH1", target: "8oxodG", type: "REPAIRS", label: "MMR" },
+    { source: "MSH2", target: "8oxodG", type: "REPAIRS", label: "MMR" },
 
     // ═══ HCA METABOLISM CHAIN ═══════════════════════════════════════
     // PhIP → CYP1A2 (N-oxidation) → N-OH-PhIP → NAT2/SULT → reactive ester → DNA
@@ -153,6 +159,8 @@ const GRAPH_DATA = {
     { source: "ABCG2", target: "PhIP_gluc", type: "TRANSPORTS", label: "efflux" },
     // HCA repair
     { source: "XRCC1", target: "PhIP_dG", type: "REPAIRS", label: "BER" },
+    { source: "MLH1", target: "PhIP_dG", type: "REPAIRS", label: "MMR" },
+    { source: "MSH2", target: "PhIP_dG", type: "REPAIRS", label: "MMR" },
 
     // ═══ AROMATIC AMINE METABOLISM ═══════════════════════════════════
     // 4-ABP → CYP1A2 (N-oxidation) → N-OH-4-ABP → NAT1 (O-acetylation in bladder) → DNA
@@ -165,6 +173,8 @@ const GRAPH_DATA = {
     { source: "NAT2", target: "4ABP", type: "DETOXIFIES", label: "N-acetylation (deactivation)", carcinogen: "4ABP" },
     { source: "GSTM1", target: "NOH4ABP", type: "DETOXIFIES", label: "GSH conjugation", carcinogen: "4ABP" },
     { source: "XRCC1", target: "ABP_dG", type: "REPAIRS", label: "BER" },
+    { source: "MLH1", target: "ABP_dG", type: "REPAIRS", label: "MMR" },
+    { source: "MSH2", target: "ABP_dG", type: "REPAIRS", label: "MMR" },
 
     // ═══ NITROSAMINE METABOLISM ══════════════════════════════════════
     // NNK → CYP2A6/2A13 (α-hydroxylation) → methyldiazohydroxide → O6-MeG

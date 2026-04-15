@@ -132,6 +132,16 @@ class TestFilterKnowledgeGraph:
         assert len(filtered.nodes) == 2
         assert filtered.edges == []
 
+    def test_returns_independent_model_copies(self):
+        source = _sample_graph()
+
+        filtered = filter_knowledge_graph(source, GraphVisibility.ALL)
+        filtered.nodes[0].label = "Changed"
+        filtered.edges[0].label = "Updated"
+
+        assert source.nodes[0].label == "CYP1A1"
+        assert source.edges[0].label is None
+
 
 class TestFilteredEngine:
     def test_returns_engine_for_selected_visibility(self):

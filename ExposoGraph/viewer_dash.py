@@ -7,7 +7,7 @@ import json
 import re
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Iterable, Mapping
+from typing import Any, Callable, Iterable, Mapping, TypeVar, cast
 
 from .branding import APP_NAME
 from .config import GraphVisibility
@@ -22,15 +22,55 @@ from .cytoscape_adapter import (
 from .engine import GraphEngine
 from .models import KnowledgeGraph
 
+cyto: Any
+ALL: Any
+DashApp: Any
+DashInput: Any
+DashOutput: Any
+DashState: Any
+ctx: Any
+dcc: Any
+html: Any
+no_update: Any
+_DASH_IMPORT_ERROR: ImportError | None
+_CallbackFunc = TypeVar("_CallbackFunc", bound=Callable[..., Any])
+
 try:  # pragma: no cover - exercised through runtime integration
-    import dash_cytoscape as cyto
-    from dash import ALL, Dash, Input, Output, State, ctx, dcc, html, no_update
+    import dash_cytoscape as _cyto
+    from dash import (
+        ALL as _ALL,
+        Dash as _DashApp,
+        Input as _DashInput,
+        Output as _DashOutput,
+        State as _DashState,
+        ctx as _ctx,
+        dcc as _dcc,
+        html as _html,
+        no_update as _no_update,
+    )
 except ImportError as exc:  # pragma: no cover - tested via helper raising
-    cyto = None
-    Dash = None  # type: ignore[assignment]
-    ALL = Input = Output = State = ctx = dcc = html = no_update = None  # type: ignore[assignment]
+    cyto = cast(Any, None)
+    ALL = cast(Any, None)
+    DashApp = cast(Any, None)
+    DashInput = cast(Any, None)
+    DashOutput = cast(Any, None)
+    DashState = cast(Any, None)
+    ctx = cast(Any, None)
+    dcc = cast(Any, None)
+    html = cast(Any, None)
+    no_update = cast(Any, None)
     _DASH_IMPORT_ERROR = exc
 else:
+    cyto = _cyto
+    ALL = _ALL
+    DashApp = _DashApp
+    DashInput = _DashInput
+    DashOutput = _DashOutput
+    DashState = _DashState
+    ctx = _ctx
+    dcc = _dcc
+    html = _html
+    no_update = _no_update
     _DASH_IMPORT_ERROR = None
 
 
@@ -107,12 +147,140 @@ _HOVER_TOOLTIP_STYLE = {
 }
 
 
+_GENOTYPE_PROFILES: dict[str, dict[str, float]] = {
+    "normal": {},
+    "bap_high_risk": {"CYP1A1": 1.3, "GSTM1": 0.0},
+    "nat2_slow": {"NAT2": 0.5},
+    "cyp2e1_high": {"CYP2E1": 1.3},
+}
+
+_GENOTYPE_MESSAGES: dict[str, str] = {
+    "normal": "Baseline profile: no genotype overrides applied.",
+    "bap_high_risk": (
+        "BaP high-risk: CYP1A1 activation edges become bolder and GSTM1 detoxification "
+        "edges fade toward an absent-function state."
+    ),
+    "nat2_slow": (
+        "NAT2 slow acetylator: NAT2-linked activation and detoxification edges are "
+        "dimmed to reflect reduced catalytic capacity."
+    ),
+    "cyp2e1_high": (
+        "CYP2E1 high activity: CYP2E1-driven activation edges become bolder to show "
+        "stronger bioactivation context."
+    ),
+}
+
+_ACTIVITY_EDGE_TYPES = {"ACTIVATES", "DETOXIFIES", "REPAIRS"}
+
+
+def _genotype_node_background_opacity(score: float) -> float:
+    if score == 0.0:
+        return 0.18
+    if score > 1.0:
+        return 1.0
+    if score < 1.0:
+        return 0.5
+    return 0.94
+
+
+def _genotype_edge_visual_style(
+    score: float | None,
+    edge_type: str,
+    default_color: str,
+) -> dict[str, Any]:
+    if score is None or edge_type not in _ACTIVITY_EDGE_TYPES:
+        return {
+            "color": default_color,
+            "opacity": 0.72,
+            "target_arrow_shape": "triangle",
+        }
+
+    base_width = 3
+    if score == 0.0:
+        return {
+            "color": "#b9c1cb",
+            "width": 1,
+            "opacity": 0.16,
+            "target_arrow_shape": "none",
+        }
+    if score > 1.0:
+        return {
+            "color": default_color,
+            "width": max(4, min(8, round(base_width * (1 + (score - 1.0) * 4)))),
+            "opacity": 0.96,
+            "target_arrow_shape": "triangle",
+        }
+    return {
+        "color": default_color,
+        "width": max(1, min(8, round(base_width * score))),
+        "opacity": 0.22,
+        "target_arrow_shape": "triangle",
+    }
+
+
+def _apply_genotype_profile(
+    elements: list[dict[str, Any]],
+    profile_key: str,
+) -> list[dict[str, Any]]:
+    """Apply genotype-aware borders, opacity, and edge emphasis to Cytoscape elements."""
+    overrides = _GENOTYPE_PROFILES.get(profile_key or "normal", {})
+    if not overrides:
+        return elements
+
+    from .cytoscape_adapter import _activity_indicator
+
+    updated: list[dict[str, Any]] = []
+    # Build a lookup of source node activity overrides
+    node_activity: dict[str, float] = {}
+    for element in elements:
+        data = element.get("data", {})
+        node_id = data.get("id")
+        if data.get("kind") == "node" and node_id and node_id in overrides:
+            node_activity[node_id] = overrides[node_id]
+
+    for element in elements:
+        data = element.get("data", {})
+        el = copy.deepcopy(element)
+        el_data = el["data"]
+
+        if el_data.get("kind") == "node" and el_data.get("id") in overrides:
+            score = overrides[el_data["id"]]
+            indicator_color, indicator_width = _activity_indicator(score)
+            el_data["activity_border_color"] = indicator_color
+            el_data["activity_border_width"] = indicator_width
+            el_data["background_opacity"] = _genotype_node_background_opacity(score)
+
+        if el_data.get("kind") == "edge":
+            source_id = el_data.get("source")
+            edge_type = el_data.get("type", "")
+            if source_id in node_activity:
+                style = _genotype_edge_visual_style(
+                    node_activity[source_id],
+                    edge_type,
+                    str(el_data.get("color", "#8ea4bb")),
+                )
+                el_data["color"] = style["color"]
+                el_data["opacity"] = style["opacity"]
+                el_data["target_arrow_shape"] = style["target_arrow_shape"]
+                if "width" in style:
+                    el_data["width"] = style["width"]
+
+        updated.append(el)
+    return updated
+
+
 def _require_dash() -> None:
     if _DASH_IMPORT_ERROR is not None:
         raise ImportError(
             "Dash viewer support requires `dash` and `dash-cytoscape`. "
             "Install `ExposoGraph[viewer]` or `pip install dash dash-cytoscape`."
         ) from _DASH_IMPORT_ERROR
+
+
+def _typed_dash_callback(
+    app: Any,
+) -> Callable[..., Callable[[_CallbackFunc], _CallbackFunc]]:
+    return cast(Callable[..., Callable[[_CallbackFunc], _CallbackFunc]], app.callback)
 
 
 def _slug(value: str | None) -> str:
@@ -275,12 +443,12 @@ def _merge_bundle_positions(
     merged_bundle["positions"] = merged_positions
     merged_elements = []
     for element in merged_bundle.get("elements", []):
-        node_id = _element_id(element)
-        if _is_edge_element(element) or node_id not in merged_positions:
+        element_node_id = _element_id(element)
+        if _is_edge_element(element) or element_node_id not in merged_positions:
             merged_elements.append(element)
             continue
         updated_element = copy.deepcopy(element)
-        updated_element["position"] = merged_positions[node_id]
+        updated_element["position"] = merged_positions[element_node_id]
         merged_elements.append(updated_element)
     merged_bundle["elements"] = merged_elements
     return merged_bundle
@@ -384,7 +552,7 @@ def apply_viewer_filters(
         and str(edge["data"].get("target", "")) in visible_node_ids
     ]
 
-    neighbor_map = {node_id: set() for node_id in visible_node_ids}
+    neighbor_map: dict[str, set[str]] = {node_id: set() for node_id in visible_node_ids}
     edge_by_id: dict[str, dict[str, Any]] = {}
     for edge in visible_edges:
         data = edge["data"]
@@ -595,7 +763,13 @@ def create_dash_viewer_app(
     title: str | None = None,
 ) -> Any:
     _require_dash()
-    assert cyto is not None and Dash is not None and dcc is not None and html is not None and ALL is not None
+    assert (
+        cyto is not None
+        and DashApp is not None
+        and dcc is not None
+        and html is not None
+        and ALL is not None
+    )
     cyto.load_extra_layouts()
 
     bundle = _coerce_bundle(
@@ -605,8 +779,9 @@ def create_dash_viewer_app(
         positions=positions,
     )
 
-    app = Dash(__name__)
+    app = DashApp(__name__)
     viewer_title = title or f"{APP_NAME} Advanced Viewer"
+    typed_callback = _typed_dash_callback(app)
     node_type_options = list(bundle.metadata.get("node_type_counts", {}).keys())
     edge_type_options = list(bundle.metadata.get("edge_type_counts", {}).keys())
     carcinogen_groups = list(bundle.metadata.get("carcinogen_groups", {}).keys())
@@ -737,6 +912,29 @@ def create_dash_viewer_app(
                                                 clearable=False,
                                                 style={"borderRadius": "10px"},
                                             ),
+                                            html.Div("Genotype profile", style={"fontSize": "0.82rem", "color": "#9fb1c8", "marginTop": "12px", "marginBottom": "6px"}),
+                                            dcc.Dropdown(
+                                                id="viewer-genotype-profile",
+                                                options=[
+                                                    {"label": "Normal (all activity = 1.0)", "value": "normal"},
+                                                    {"label": "CYP1A1*2B / GSTM1-null", "value": "bap_high_risk"},
+                                                    {"label": "NAT2 slow acetylator", "value": "nat2_slow"},
+                                                    {"label": "CYP2E1 c2/c2 high activity", "value": "cyp2e1_high"},
+                                                ],
+                                                value="normal",
+                                                clearable=False,
+                                                style={"borderRadius": "10px"},
+                                            ),
+                                            html.Div(
+                                                _GENOTYPE_MESSAGES["normal"],
+                                                id="viewer-genotype-feedback",
+                                                style={
+                                                    "fontSize": "0.78rem",
+                                                    "color": "#9fb1c8",
+                                                    "marginTop": "6px",
+                                                    "lineHeight": "1.35",
+                                                },
+                                            ),
                                         ],
                                     ),
                                     html.Div(id="viewer-node-legend", style=_CARD_STYLE),
@@ -838,14 +1036,14 @@ def create_dash_viewer_app(
         ],
     )
 
-    @app.callback(
-        Output("viewer-node-types", "value"),
-        Output("viewer-edge-types", "value"),
-        Input({"type": "viewer-legend-toggle", "kind": "node", "value": ALL}, "n_clicks"),
-        Input({"type": "viewer-legend-toggle", "kind": "edge", "value": ALL}, "n_clicks"),
-        State("viewer-node-types", "value"),
-        State("viewer-edge-types", "value"),
-        State("viewer-bundle-store", "data"),
+    @typed_callback(
+        DashOutput("viewer-node-types", "value"),
+        DashOutput("viewer-edge-types", "value"),
+        DashInput({"type": "viewer-legend-toggle", "kind": "node", "value": ALL}, "n_clicks"),
+        DashInput({"type": "viewer-legend-toggle", "kind": "edge", "value": ALL}, "n_clicks"),
+        DashState("viewer-node-types", "value"),
+        DashState("viewer-edge-types", "value"),
+        DashState("viewer-bundle-store", "data"),
         prevent_initial_call=True,
     )
     def _toggle_legend_filters(
@@ -876,10 +1074,10 @@ def create_dash_viewer_app(
             return no_update, next_edge_values
         return no_update, no_update
 
-    @app.callback(
-        Output("viewer-bundle-store", "data"),
-        Input("advanced-viewer-graph", "elements"),
-        State("viewer-bundle-store", "data"),
+    @typed_callback(
+        DashOutput("viewer-bundle-store", "data"),
+        DashInput("advanced-viewer-graph", "elements"),
+        DashState("viewer-bundle-store", "data"),
         prevent_initial_call=True,
     )
     def _persist_positions(
@@ -889,22 +1087,24 @@ def create_dash_viewer_app(
         merged = _merge_bundle_positions(bundle_data, graph_elements)
         return merged if merged is not None else no_update
 
-    @app.callback(
-        Output("advanced-viewer-graph", "elements"),
-        Output("advanced-viewer-graph", "stylesheet"),
-        Output("advanced-viewer-graph", "layout"),
-        Output("viewer-stats", "children"),
-        Output("viewer-node-legend", "children"),
-        Output("viewer-edge-legend", "children"),
-        Input("viewer-bundle-store", "data"),
-        Input("viewer-search", "value"),
-        Input("viewer-node-types", "value"),
-        Input("viewer-edge-types", "value"),
-        Input("viewer-carcinogen-group", "value"),
-        Input("viewer-layout-mode", "value"),
-        Input("advanced-viewer-graph", "mouseoverNodeData"),
-        Input("advanced-viewer-graph", "mouseoverEdgeData"),
-        Input("viewer-selection-store", "data"),
+    @typed_callback(
+        DashOutput("advanced-viewer-graph", "elements"),
+        DashOutput("advanced-viewer-graph", "stylesheet"),
+        DashOutput("advanced-viewer-graph", "layout"),
+        DashOutput("viewer-stats", "children"),
+        DashOutput("viewer-node-legend", "children"),
+        DashOutput("viewer-edge-legend", "children"),
+        DashOutput("viewer-genotype-feedback", "children"),
+        DashInput("viewer-bundle-store", "data"),
+        DashInput("viewer-search", "value"),
+        DashInput("viewer-node-types", "value"),
+        DashInput("viewer-edge-types", "value"),
+        DashInput("viewer-carcinogen-group", "value"),
+        DashInput("viewer-layout-mode", "value"),
+        DashInput("viewer-genotype-profile", "value"),
+        DashInput("advanced-viewer-graph", "mouseoverNodeData"),
+        DashInput("advanced-viewer-graph", "mouseoverEdgeData"),
+        DashInput("viewer-selection-store", "data"),
     )
     def _update_graph(
         bundle_data: dict[str, Any],
@@ -913,10 +1113,11 @@ def create_dash_viewer_app(
         edge_type_values: list[str],
         carcinogen_group_value: str,
         layout_value: str,
+        genotype_profile: str,
         hovered_node: dict[str, Any] | None,
         hovered_edge: dict[str, Any] | None,
         selection: dict[str, Any] | None,
-    ) -> tuple[Any, Any, Any, Any, Any, Any]:
+    ) -> tuple[Any, Any, Any, Any, Any, Any, Any]:
         selected_node_id = None
         selected_edge_id = None
         if selection:
@@ -979,13 +1180,23 @@ def create_dash_viewer_app(
             kind="edge",
             active_values=edge_type_values,
         )
-        return state.elements, bundle_data["stylesheet"], state.layout, stats, node_legend, edge_legend
+        final_elements = _apply_genotype_profile(state.elements, genotype_profile)
+        genotype_feedback = _GENOTYPE_MESSAGES.get(genotype_profile or "normal", _GENOTYPE_MESSAGES["normal"])
+        return (
+            final_elements,
+            bundle_data["stylesheet"],
+            state.layout,
+            stats,
+            node_legend,
+            edge_legend,
+            genotype_feedback,
+        )
 
-    @app.callback(
-        Output("viewer-selection-store", "data"),
-        Input("advanced-viewer-graph", "tapNodeData"),
-        Input("advanced-viewer-graph", "tapEdgeData"),
-        Input("viewer-reset-focus", "n_clicks"),
+    @typed_callback(
+        DashOutput("viewer-selection-store", "data"),
+        DashInput("advanced-viewer-graph", "tapNodeData"),
+        DashInput("advanced-viewer-graph", "tapEdgeData"),
+        DashInput("viewer-reset-focus", "n_clicks"),
     )
     def _update_selection(
         tap_node: dict[str, Any] | None,
@@ -1011,12 +1222,12 @@ def create_dash_viewer_app(
                 selection = None
         return selection
 
-    @app.callback(
-        Output("viewer-detail", "children"),
-        Input("viewer-bundle-store", "data"),
-        Input("viewer-selection-store", "data"),
-        Input("advanced-viewer-graph", "mouseoverNodeData"),
-        Input("advanced-viewer-graph", "mouseoverEdgeData"),
+    @typed_callback(
+        DashOutput("viewer-detail", "children"),
+        DashInput("viewer-bundle-store", "data"),
+        DashInput("viewer-selection-store", "data"),
+        DashInput("advanced-viewer-graph", "mouseoverNodeData"),
+        DashInput("advanced-viewer-graph", "mouseoverEdgeData"),
     )
     def _render_detail(
         bundle_data: dict[str, Any],
@@ -1037,12 +1248,12 @@ def create_dash_viewer_app(
         detail_payload = build_detail_payload(bundle_data, focus)
         return _detail_children(detail_payload, context_label=context_label)
 
-    @app.callback(
-        Output("viewer-hover-tooltip", "children"),
-        Output("viewer-hover-tooltip", "style"),
-        Input("viewer-bundle-store", "data"),
-        Input("advanced-viewer-graph", "mouseoverNodeData"),
-        Input("advanced-viewer-graph", "mouseoverEdgeData"),
+    @typed_callback(
+        DashOutput("viewer-hover-tooltip", "children"),
+        DashOutput("viewer-hover-tooltip", "style"),
+        DashInput("viewer-bundle-store", "data"),
+        DashInput("advanced-viewer-graph", "mouseoverNodeData"),
+        DashInput("advanced-viewer-graph", "mouseoverEdgeData"),
     )
     def _render_hover_tooltip(
         bundle_data: dict[str, Any],
@@ -1063,14 +1274,14 @@ def create_dash_viewer_app(
             return _hover_tooltip_children(payload, "Hover Edge"), {**_HOVER_TOOLTIP_STYLE, "display": "block"}
         return [], {**_HOVER_TOOLTIP_STYLE, "display": "none"}
 
-    @app.callback(
-        Output("advanced-viewer-graph", "zoom"),
-        Output("advanced-viewer-graph", "pan"),
-        Input("viewer-zoom-in", "n_clicks"),
-        Input("viewer-zoom-out", "n_clicks"),
-        Input("viewer-zoom-reset", "n_clicks"),
-        State("advanced-viewer-graph", "zoom"),
-        State("advanced-viewer-graph", "pan"),
+    @typed_callback(
+        DashOutput("advanced-viewer-graph", "zoom"),
+        DashOutput("advanced-viewer-graph", "pan"),
+        DashInput("viewer-zoom-in", "n_clicks"),
+        DashInput("viewer-zoom-out", "n_clicks"),
+        DashInput("viewer-zoom-reset", "n_clicks"),
+        DashState("advanced-viewer-graph", "zoom"),
+        DashState("advanced-viewer-graph", "pan"),
         prevent_initial_call=True,
     )
     def _update_zoom(
@@ -1090,10 +1301,10 @@ def create_dash_viewer_app(
             return 1.0, {"x": 0, "y": 0}
         return no_update, no_update
 
-    @app.callback(
-        Output("advanced-viewer-graph", "generateImage"),
-        Input("viewer-export-png", "n_clicks"),
-        Input("viewer-export-svg", "n_clicks"),
+    @typed_callback(
+        DashOutput("advanced-viewer-graph", "generateImage"),
+        DashInput("viewer-export-png", "n_clicks"),
+        DashInput("viewer-export-svg", "n_clicks"),
         prevent_initial_call=True,
     )
     def _export_image(_png_clicks: int, _svg_clicks: int) -> Any:
@@ -1104,15 +1315,15 @@ def create_dash_viewer_app(
             return {"type": "svg", "action": "download", "filename": _slug(viewer_title)}
         return no_update
 
-    @app.callback(
-        Output("viewer-layout-download", "data"),
-        Input("viewer-export-layout", "n_clicks"),
-        State("viewer-bundle-store", "data"),
+    @typed_callback(
+        DashOutput("viewer-layout-download", "data"),
+        DashInput("viewer-export-layout", "n_clicks"),
+        DashState("viewer-bundle-store", "data"),
         prevent_initial_call=True,
     )
     def _export_layout(_clicks: int, bundle_data: dict[str, Any]) -> Any:
         positions = bundle_data.get("positions", {})
-        return dcc.send_string(
+        return cast(Any, dcc).send_string(
             json.dumps(positions, indent=2),
             f"{_slug(viewer_title)}_layout.json",
         )
