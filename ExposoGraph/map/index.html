@@ -436,8 +436,8 @@ body {
     <div class="header-stats">
       <span class="header-stat"><b id="node-count">0</b> nodes</span>
       <span class="header-stat"><b id="edge-count">0</b> edges</span>
-      <span class="header-stat"><b>5</b> node types</span>
-      <span class="header-stat"><b>6</b> edge types</span>
+      <span class="header-stat"><b id="node-type-count">0</b> node types</span>
+      <span class="header-stat"><b id="edge-type-count">0</b> edge types</span>
     </div>
   </header>
 
@@ -580,8 +580,34 @@ const height = container.clientHeight;
 const nodes = GRAPH_DATA.nodes.map(d => ({...d}));
 const edges = GRAPH_DATA.edges.map(d => ({...d}));
 
-document.getElementById("node-count").textContent = nodes.length;
-document.getElementById("edge-count").textContent = edges.length;
+const nodeCountEl = document.getElementById("node-count");
+const edgeCountEl = document.getElementById("edge-count");
+const nodeTypeCountEl = document.getElementById("node-type-count");
+const edgeTypeCountEl = document.getElementById("edge-type-count");
+
+function edgeSourceId(edge) {
+  return typeof edge.source === "object" ? edge.source.id : edge.source;
+}
+
+function edgeTargetId(edge) {
+  return typeof edge.target === "object" ? edge.target.id : edge.target;
+}
+
+function updateHeaderCounts({ visibleNodeIds = null, visibleEdgeIds = null } = {}) {
+  const visibleNodes = visibleNodeIds
+    ? nodes.filter(n => visibleNodeIds.has(n.id))
+    : nodes;
+  const visibleEdges = visibleEdgeIds
+    ? edges.filter((edge, index) => visibleEdgeIds.has(index))
+    : edges;
+
+  nodeCountEl.textContent = String(visibleNodes.length);
+  edgeCountEl.textContent = String(visibleEdges.length);
+  nodeTypeCountEl.textContent = String(new Set(visibleNodes.map(n => n.type)).size);
+  edgeTypeCountEl.textContent = String(new Set(visibleEdges.map(e => e.type)).size);
+}
+
+updateHeaderCounts();
 
 // ── Build Legends ────────────────────────────────────────────────────
 const nodeLegend = document.getElementById("node-legend");
@@ -895,20 +921,20 @@ node.on("mouseover", (event, d) => {
   const connectedIds = new Set();
   connectedIds.add(d.id);
   edges.forEach(e => {
-    const sid = typeof e.source === "object" ? e.source.id : e.source;
-    const tid = typeof e.target === "object" ? e.target.id : e.target;
+    const sid = edgeSourceId(e);
+    const tid = edgeTargetId(e);
     if (sid === d.id) connectedIds.add(tid);
     if (tid === d.id) connectedIds.add(sid);
   });
 
   node.style("opacity", n => connectedIds.has(n.id) ? 1 : 0.1);
   link.style("stroke-opacity", e => {
-    const sid = typeof e.source === "object" ? e.source.id : e.source;
-    const tid = typeof e.target === "object" ? e.target.id : e.target;
+    const sid = edgeSourceId(e);
+    const tid = edgeTargetId(e);
     return (sid === d.id || tid === d.id) ? 0.8 : 0.03;
   }).style("stroke-width", e => {
-    const sid = typeof e.source === "object" ? e.source.id : e.source;
-    const tid = typeof e.target === "object" ? e.target.id : e.target;
+    const sid = edgeSourceId(e);
+    const tid = edgeTargetId(e);
     return (sid === d.id || tid === d.id) ? 2.5 : 0.5;
   });
 })
@@ -948,8 +974,8 @@ function showDetail(d) {
   const outgoing = [];
   const incoming = [];
   edges.forEach(e => {
-    const sid = typeof e.source === "object" ? e.source.id : e.source;
-    const tid = typeof e.target === "object" ? e.target.id : e.target;
+    const sid = edgeSourceId(e);
+    const tid = edgeTargetId(e);
     if (sid === d.id) {
       const tNode = nodes.find(n => n.id === tid);
       outgoing.push({ edge: e, node: tNode });
@@ -1028,16 +1054,16 @@ document.getElementById("search-input").addEventListener("input", function() {
   // Also highlight connected nodes
   const expandedIds = new Set(matchIds);
   edges.forEach(e => {
-    const sid = typeof e.source === "object" ? e.source.id : e.source;
-    const tid = typeof e.target === "object" ? e.target.id : e.target;
+    const sid = edgeSourceId(e);
+    const tid = edgeTargetId(e);
     if (matchIds.has(sid)) expandedIds.add(tid);
     if (matchIds.has(tid)) expandedIds.add(sid);
   });
 
   node.style("opacity", n => expandedIds.has(n.id) ? 1 : 0.08);
   link.style("stroke-opacity", e => {
-    const sid = typeof e.source === "object" ? e.source.id : e.source;
-    const tid = typeof e.target === "object" ? e.target.id : e.target;
+    const sid = edgeSourceId(e);
+    const tid = edgeTargetId(e);
     return (expandedIds.has(sid) && expandedIds.has(tid)) ? 0.6 : 0.02;
   });
 });
@@ -1056,8 +1082,8 @@ function highlightType(type) {
 
   node.style("opacity", n => typeIds.has(n.id) ? 1 : 0.08);
   link.style("stroke-opacity", e => {
-    const sid = typeof e.source === "object" ? e.source.id : e.source;
-    const tid = typeof e.target === "object" ? e.target.id : e.target;
+    const sid = edgeSourceId(e);
+    const tid = edgeTargetId(e);
     return (typeIds.has(sid) || typeIds.has(tid)) ? 0.5 : 0.02;
   });
 }
@@ -1069,6 +1095,7 @@ function filterByCarcinogen(group) {
     document.querySelector(".filter-btn").classList.add("active");
     node.style("opacity", 1);
     link.style("stroke-opacity", d => d.type === "PATHWAY" ? 0.25 : 0.45);
+    updateHeaderCounts();
     applyGenotypeProfile(activeGenotype);
     return;
   }
@@ -1083,8 +1110,8 @@ function filterByCarcinogen(group) {
   const connectedIds = new Set(carcinogens);
 
   edges.forEach((e, i) => {
-    const sid = typeof e.source === "object" ? e.source.id : e.source;
-    const tid = typeof e.target === "object" ? e.target.id : e.target;
+    const sid = edgeSourceId(e);
+    const tid = edgeTargetId(e);
     // Direct carcinogen connection or matching carcinogen field
     if (carcinogens.has(sid) || carcinogens.has(tid) ||
         (e.carcinogen && carcinogens.has(e.carcinogen))) {
@@ -1096,8 +1123,8 @@ function filterByCarcinogen(group) {
 
   // Expand one more level for metabolite → adduct connections
   edges.forEach((e, i) => {
-    const sid = typeof e.source === "object" ? e.source.id : e.source;
-    const tid = typeof e.target === "object" ? e.target.id : e.target;
+    const sid = edgeSourceId(e);
+    const tid = edgeTargetId(e);
     if (connectedIds.has(sid) || connectedIds.has(tid)) {
       if (e.type === "FORMS_ADDUCT" || e.type === "REPAIRS") {
         relevantEdgeIds.add(i);
@@ -1110,6 +1137,7 @@ function filterByCarcinogen(group) {
   node.style("opacity", n => connectedIds.has(n.id) ? 1 : 0.05);
   link.style("stroke-opacity", (d, i) => relevantEdgeIds.has(i) ? 0.7 : 0.02)
     .style("stroke-width", (d, i) => relevantEdgeIds.has(i) ? 2 : 0.3);
+  updateHeaderCounts({ visibleNodeIds: connectedIds, visibleEdgeIds: relevantEdgeIds });
 }
 
 // ── Genotype Profile ─────────────────────────────────────────────
@@ -1245,7 +1273,7 @@ function applyGenotypeProfile(profileKey) {
       return;
     }
 
-    const sid = typeof d.source === "object" ? d.source.id : d.source;
+    const sid = edgeSourceId(d);
     const score = overrides[sid];
     const style = activityVisualStyle(score, edgeType, defaultColor);
     edge.attr("stroke", style.stroke)
