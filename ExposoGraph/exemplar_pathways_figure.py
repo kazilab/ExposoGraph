@@ -568,7 +568,7 @@ _GENOTYPE_PROFILES: dict[str, dict[str, float]] = {
 _COMPARISON_PROFILE_SETS: dict[str, tuple[tuple[str, str], ...]] = {
     "A": (
         ("Baseline (Normal Activity)", "baseline"),
-        ("CYP1A1*2B / GSTM1-null (High Risk)", "bap_high_risk"),
+        ("CYP1A1*2C / GSTM1-null (High Risk)", "bap_high_risk"),
     ),
     "B": (
         ("Baseline (Normal Activity)", "baseline"),
